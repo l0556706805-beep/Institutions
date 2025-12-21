@@ -1,0 +1,27 @@
+name: Deploy C# App
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build project
+        run: dotnet publish ./csharp-app/YourCSharpProject.csproj -c Release -o ./publish
+
+      - name: Deploy to Azure
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: YourCSharpAppServiceName
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE_CSHARP }}
+          package: ./publish
