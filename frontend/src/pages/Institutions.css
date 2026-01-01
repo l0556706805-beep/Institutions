@@ -1,0 +1,197 @@
+/* --- בסיס כללי לעמוד --- */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 25px 20px;
+  font-family: "Assistant", sans-serif;
+  direction: rtl;
+  background: #f9f9fc;
+  color: #333;
+}
+
+/* --- כותרות --- */
+h2, h3, h4, h5 {
+  color: #2a2f4f;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 28px;
+}
+
+/* --- כרטיסי מוסדות --- */
+.institutions-table {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.institutions-table tr {
+  background: #fff;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.institutions-table tr:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+.institutions-table td {
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+}
+
+.institutions-table td strong {
+  font-weight: 700;
+  color: #2a2f4f;
+}
+
+/* --- כפתורים --- */
+button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.add-btn, .save-btn {
+  background: #4f7cff;
+  color: #fff;
+}
+
+.add-btn:hover, .save-btn:hover {
+  background: #375bd8;
+}
+
+.edit-btn {
+  background: #f1c40f;
+  color: #1c1c1c;
+}
+
+.edit-btn:hover {
+  background: #d4a80b;
+}
+
+.delete-btn {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
+}
+
+/* --- טופס מוסד חדש --- */
+.form-section {
+  margin-top: 30px;
+  background: #fff;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 5px 18px rgba(0,0,0,0.08);
+}
+
+.form-section input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  transition: border-color 0.25s;
+}
+
+.form-section input:focus {
+  border-color: #4f7cff;
+  outline: none;
+}
+
+/* --- מודל עריכה --- */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.25s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-content {
+  background: #fff;
+  width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 30px;
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+}
+
+.close {
+  float: left;
+  background: transparent;
+  font-size: 18px;
+  color: #777;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: #333;
+}
+
+/* --- טבלת משתמשים במודל --- */
+.users-table {
+  width: 100%;
+  margin-top: 15px;
+  border-collapse: collapse;
+}
+
+.users-table th {
+  text-align: right;
+  background: #f4f6ff;
+  padding: 10px;
+  color: #2a2f4f;
+  font-weight: 600;
+}
+
+.users-table td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+/* --- מודל קטן לעריכת משתמש --- */
+.user-modal {
+  background: #fdfdfd;
+  padding: 18px;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  margin-top: 18px;
+}

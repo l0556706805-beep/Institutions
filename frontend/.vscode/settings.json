@@ -1,0 +1,8 @@
+{
+    "appService.zipIgnorePattern": [
+        "node_modules{,/**}",
+        ".vscode{,/**}"
+    ],
+    "appService.defaultWebAppToDeploy": "/subscriptions/6c6a10cd-91b8-4385-9d2f-5d958aa39fce/resourceGroups/nechama/providers/Microsoft.Web/sites/institutions",
+    "appService.deploySubpath": "build"
+}
