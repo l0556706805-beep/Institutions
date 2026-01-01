@@ -5,38 +5,53 @@ using EducationOrdersAPI.Helpers;
 using EducationOrdersAPI.Repository;
 using EducationOrdersAPI.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Settings ---
+// =====================
+// Settings
+// =====================
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection("EmailSettings"));
 
 builder.Services.AddTransient<IEmailService, EmailService>();
 
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("Jwt"));
+
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
 
-// --- Database ---
-builder.Services.AddDbContext<InstitutionsContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// =====================
+// Database (LOCAL SQL)
+// =====================
+builder.Services.AddDbContext<InstitutionsContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    )
+);
 
-// --- Services & Repositories ---
+// =====================
+// Services & Repositories
+// =====================
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// --- Controllers & Swagger ---
+// =====================
+// Controllers & Swagger
+// =====================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// --- JWT Authentication ---
+// =====================
+// JWT Authentication
+// =====================
 var key = Encoding.UTF8.GetBytes(jwt.Key);
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -44,37 +59,44 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
+    options.RequireHttpsMetadata = false; // לפיתוח מקומי
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidIssuer = jwt.Issuer,
+
         ValidateAudience = true,
         ValidAudience = jwt.Audience,
+
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
+
         ValidateLifetime = true
     };
 });
 
-// --- Authorization (role-based) ---
+// =====================
+// Authorization
+// =====================
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("Admin", policy => policy.RequireClaim("role", "Admin"));
-    options.AddPolicy("Institution", policy => policy.RequireClaim("role", "Institution"));
+    options.AddPolicy("Admin",
+        policy => policy.RequireClaim("role", "Admin"));
+
+    options.AddPolicy("Institution",
+        policy => policy.RequireClaim("role", "Institution"));
 });
 
-// --- CORS ---
+// =====================
+// CORS (LOCAL REACT)
+// =====================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins(
-                "https://educationordersapi20251203143730.azurewebsites.net", // אם רוצים גם מה־API עצמו
-                "https://localhost:3000", // לפיתוח מקומי
-                "https://institutions-bbaxg4c2h4hucwct.israelcentral-01.azurewebsites.net" // ה־React ב־Azure
-            )
+        policy
+            .WithOrigins("http://localhost:3000", "https://localhost:3000")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -82,22 +104,25 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// --- Middleware ---
+// =====================
+// Middleware
+// =====================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowReactApp"); // ✅ חובה גם ב-Production
-app.UseStaticFiles();
+app.UseCors("AllowReactApp");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// --- Seed Data (optional) ---
+// =====================
+// DB Migration & Seed
+// =====================
 using (var scope = app.Services.CreateScope())
 {
     var ctx = scope.ServiceProvider.GetRequiredService<InstitutionsContext>();
