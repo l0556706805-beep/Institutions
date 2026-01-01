@@ -71,14 +71,14 @@ const Products = () => {
   // SORT + FILTER
   // --------------------------------------
 
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortOrder("asc");
-    }
-  };
+  // const handleSort = (key: SortKey) => {
+  //   if (sortKey === key) {
+  //     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+  //   } else {
+  //     setSortKey(key);
+  //     setSortOrder("asc");
+  //   }
+  // };
 
   const getQuantityInCart = (productId: number) => {
     const item = cart.find((c) => c.id === productId);
