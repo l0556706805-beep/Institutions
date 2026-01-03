@@ -5,3 +5,4 @@ obj/
 *.vs/
 node_modules/
 build/
+frontend/node_modules/

@@ -11,25 +11,22 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================
-// Settings
+// Email Settings
 // =====================
-builder.Services.Configure<EmailSettings>(
-    builder.Configuration.GetSection("EmailSettings"));
-
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailService, EmailService>();
 
-builder.Services.Configure<JwtSettings>(
-    builder.Configuration.GetSection("Jwt"));
-
+// =====================
+// JWT Settings
+// =====================
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
 
 // =====================
 // Database (LOCAL SQL)
 // =====================
 builder.Services.AddDbContext<InstitutionsContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    )
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
 // =====================
@@ -59,7 +56,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false; // לפיתוח מקומי
+    options.RequireHttpsMetadata = false; // מאפשר פיתוח מקומי ב־HTTP
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -81,22 +78,23 @@ builder.Services.AddAuthentication(options =>
 // =====================
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("Admin",
-        policy => policy.RequireClaim("role", "Admin"));
-
-    options.AddPolicy("Institution",
-        policy => policy.RequireClaim("role", "Institution"));
+    options.AddPolicy("Admin", policy => policy.RequireClaim("role", "Admin"));
+    options.AddPolicy("Institution", policy => policy.RequireClaim("role", "Institution"));
 });
 
 // =====================
-// CORS (LOCAL REACT)
+// CORS
 // =====================
+// מאפשר גם פיתוח מקומי וגם frontend בפריסה
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy
-            .WithOrigins("http://localhost:3000", "https://localhost:3000")
+        policy.WithOrigins(
+                "http://localhost:3000",          // local dev
+                "https://localhost:3000",         // local HTTPS
+                "https://b82a5448.institutions-czw.pages.dev" // deployed frontend
+            )
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

@@ -19,15 +19,17 @@ namespace EducationOrdersAPI.Service
         private readonly InstitutionsContext _ctx;
         private readonly JwtSettings _jwt;
         private readonly PasswordHasher<User> _pwHasher;
+        private readonly IEmailService _emailService;
 
-
-    public AuthService(InstitutionsContext ctx, IOptions<JwtSettings> jwtOptions)
+        public AuthService(InstitutionsContext ctx, IOptions<JwtSettings> jwtOptions, IEmailService emailService)
         {
             _ctx = ctx;
             _jwt = jwtOptions.Value;
             _pwHasher = new PasswordHasher<User>();
+            _emailService = emailService;
         }
 
+        // ------------------ REGISTER ------------------
         public async Task<string> RegisterAsync(RegisterRequest req)
         {
             var exists = await _ctx.Users.AnyAsync(u => u.Email == req.Email);
@@ -49,6 +51,7 @@ namespace EducationOrdersAPI.Service
             return GenerateToken(user);
         }
 
+        // ------------------ LOGIN ------------------
         public async Task<string> LoginAsync(LoginRequest req)
         {
             var user = await _ctx.Users.FirstOrDefaultAsync(u => u.Email == req.Email);
@@ -60,15 +63,16 @@ namespace EducationOrdersAPI.Service
             return GenerateToken(user);
         }
 
+        // ------------------ JWT GENERATE ------------------
         private string GenerateToken(User user)
         {
             var claims = new[]
             {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-            new Claim("id", user.Id.ToString()),
-            new Claim("role", user.Role),
-            new Claim("institutionId", user.InstitutionId?.ToString() ?? string.Empty)
-        };
+                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                new Claim("id", user.Id.ToString()),
+                new Claim("role", user.Role),
+                new Claim("institutionId", user.InstitutionId?.ToString() ?? string.Empty)
+            };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -85,12 +89,13 @@ namespace EducationOrdersAPI.Service
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public async Task<User> FindByEmailAsync(string email)
+        // ------------------ FIND BY EMAIL ------------------
+        public async Task<User?> FindByEmailAsync(string email)
         {
-            var user = await _ctx.Users.FirstOrDefaultAsync(u => u.Email == email);
-            return user;
+            return await _ctx.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        // ------------------ GENERATE RESET TOKEN ------------------
         public async Task<string> GeneratePasswordResetTokenAsync(User user)
         {
             if (user == null) throw new Exception("User not found");
@@ -98,7 +103,7 @@ namespace EducationOrdersAPI.Service
             // ליצור GUID חדש עבור הטוקן
             var token = Guid.NewGuid().ToString();
 
-            // ניתן לשמור בטבלה נפרדת PasswordResetTokens עם Expiration
+            // שמירה במסד
             var reset = new PasswordResetToken
             {
                 UserId = user.Id,
@@ -111,6 +116,7 @@ namespace EducationOrdersAPI.Service
             return token;
         }
 
+        // ------------------ RESET PASSWORD ------------------
         public async Task<bool> ResetPasswordAsync(string token, string newPassword)
         {
             var resetToken = await _ctx.PasswordResetTokens
@@ -120,21 +126,37 @@ namespace EducationOrdersAPI.Service
             if (resetToken == null || resetToken.Expiration < DateTime.UtcNow)
                 return false;
 
+            // עדכון סיסמה חדשה
             resetToken.User.PasswordHash = _pwHasher.HashPassword(resetToken.User, newPassword);
 
+            // מחיקה של הטוקן אחרי שימוש
             _ctx.PasswordResetTokens.Remove(resetToken);
             await _ctx.SaveChangesAsync();
             return true;
         }
 
-        public Task SendAsync(string to, string subject, string body)
+        // ------------------ SEND EMAIL ------------------
+        public async Task SendAsync(string to, string subject, string body)
         {
-            // כאן ניתן להוסיף שירות מייל אמיתי
-            Console.WriteLine($"Sending email to {to} - {subject} - {body}");
-            return Task.CompletedTask;
+            if (_emailService != null)
+            {
+                try
+                {
+                    Console.WriteLine($"Preparing to send email to {to}");
+                    await _emailService.SendEmailAsync(to, subject, body);
+                    Console.WriteLine($"Email sent successfully to {to}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Email sending failed: {ex.Message}");
+                    throw;
+                }
+            }
+            else
+            {
+                // fallback - debug only
+                Console.WriteLine($"[DEBUG] Sending email to {to} - {subject} - {body}");
+            }
         }
-
     }
-
-
 }

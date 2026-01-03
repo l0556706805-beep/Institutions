@@ -1,6 +1,8 @@
 ﻿using MailKit.Net.Smtp;
 using MimeKit;
 using Microsoft.Extensions.Options;
+using System;
+using System.Threading.Tasks;
 
 public class EmailSettings
 {
@@ -30,7 +32,7 @@ public class EmailService : IEmailService
     {
         var email = new MimeMessage();
         email.From.Add(new MailboxAddress(_settings.SenderName, _settings.SenderEmail));
-        email.To.Add(new MailboxAddress("", to));
+        email.To.Add(MailboxAddress.Parse(to));
         email.Subject = subject;
         email.Body = new TextPart("html") { Text = body };
 
@@ -38,18 +40,26 @@ public class EmailService : IEmailService
 
         try
         {
-            await smtp.ConnectAsync(_settings.Server, _settings.Port, false);
+            Console.WriteLine($"Connecting to SMTP server: {_settings.Server}:{_settings.Port}");
+            await smtp.ConnectAsync(_settings.Server, _settings.Port, MailKit.Security.SecureSocketOptions.StartTls);
+
+            Console.WriteLine("Authenticating...");
             await smtp.AuthenticateAsync(_settings.Username, _settings.Password);
+
+            Console.WriteLine("Sending email...");
             await smtp.SendAsync(email);
+
+            Console.WriteLine($"Email sent successfully to {to}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Email sending failed: " + ex.Message);
+            throw; // זרוק את השגיאה כדי ש־AuthService ידע שהשליחה נכשלה
         }
         finally
         {
-            await smtp.DisconnectAsync(true);
+            if (smtp.IsConnected)
+                await smtp.DisconnectAsync(true);
         }
-
-        // 📌 הדפסה לקונסול — כדי לוודא מה נשלח
-        Console.WriteLine("EMAIL SENT TO: " + to);
-        Console.WriteLine("SUBJECT: " + subject);
-        Console.WriteLine("BODY: " + body);
     }
 }
