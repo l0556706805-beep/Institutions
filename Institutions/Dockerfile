@@ -1,23 +1,23 @@
 # --------------------------
-# שלב Build
+# Build stage
 # --------------------------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# העתקת קובצי csproj בלבד כדי להבטיח caching של restore
-COPY *.csproj ./
+# העתקת כל קבצי csproj עם תת-תיקיות
+COPY ["EducationOrdersAPI/EducationOrdersAPI.csproj", "EducationOrdersAPI/"]
 
-# שלב restore (חובה בשביל NuGet packages, כולל Npgsql)
-RUN dotnet restore
+# Restore packages
+RUN dotnet restore "EducationOrdersAPI/EducationOrdersAPI.csproj"
 
 # העתקת כל הקוד
 COPY . .
 
-# בניית פרויקט ופרסום
-RUN dotnet publish -c Release -o /app/publish
+# Build ו-Publish
+RUN dotnet publish "EducationOrdersAPI/EducationOrdersAPI.csproj" -c Release -o /app/publish
 
 # --------------------------
-# שלב Runtime
+# Runtime stage
 # --------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
