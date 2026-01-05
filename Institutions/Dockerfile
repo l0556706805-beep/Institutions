@@ -23,4 +23,4 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # הפעלת האפליקציה
-CMD ["dotnet", "$(ls /app | grep .dll)"]
+CMD ["dotnet", "EducationOrdersAPI.dll"]
