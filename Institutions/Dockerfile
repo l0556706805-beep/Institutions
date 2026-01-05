@@ -1,29 +1,22 @@
 # --------------------------
-# שלב Build
+# Build stage
 # --------------------------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# העתקת כל קבצי csproj מתיקיות משנה
-COPY **/*.csproj ./ 
-
-# Restore לכל הפרויקטים
+COPY *.csproj ./
 RUN dotnet restore
 
-# העתקת כל הקוד
 COPY . .
-
-# Build ו־publish לכל הפרויקטים
-RUN dotnet publish EducationOrdersAPI/EducationOrdersAPI.csproj -c Release -o /app/publish
+RUN dotnet publish -c Release -o /app/publish
 
 # --------------------------
-# שלב Runtime
+# Runtime stage
 # --------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
-# העתקת הפאבליש משלב הבילד
 COPY --from=build /app/publish .
 
-# הפעלת האפליקציה
-CMD ["dotnet", "EducationOrdersAPI.dll"]
+# CMD שמוצא ומריץ את ה-DLL הראשון בתיקייה
+CMD ["sh", "-c", "dotnet $(ls *.dll | head -n 1)"]
