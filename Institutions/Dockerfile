@@ -1,22 +1,25 @@
 # --------------------------
-# Build stage
+# שלב Build
 # --------------------------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# העתקת כל הקבצים הראשיים כדי שנוכל למצוא את ה-csproj
-COPY . . 
+# העתקת כל קבצי csproj מתיקיות משנה
+COPY **/*.csproj ./ 
 
-# מציאת קובץ csproj ראשון (אם יש כמה, לוקח את הראשון)
-RUN csproj=$(find . -name "*.csproj" | head -n 1) && \
-    echo "Found csproj: $csproj" && \
-    dotnet restore "$csproj" && \
-    dotnet publish "$csproj" -c Release -o /app/publish
+# Restore לכל הפרויקטים
+RUN dotnet restore
+
+# העתקת כל הקוד
+COPY . .
+
+# Build ו־publish לכל הפרויקטים
+RUN dotnet publish EducationOrdersAPI/EducationOrdersAPI.csproj -c Release -o /app/publish
 
 # --------------------------
-# Runtime stage
+# שלב Runtime
 # --------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
 # העתקת הפאבליש משלב הבילד
