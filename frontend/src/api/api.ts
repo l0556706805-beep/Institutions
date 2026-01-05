@@ -2,7 +2,7 @@ import axios from "axios";
 
 // יצירת מופע API
 const api = axios.create({
-  baseURL: "https://localhost:44378/api",
+  baseURL: "https://institutions-93gl.onrender.com",
 });
 
 // פונקציה שמגדירה את הטוקן בגלובל
