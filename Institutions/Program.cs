@@ -9,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddDbContext<InstitutionsContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // =====================
 // Email Settings
@@ -22,12 +25,12 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
 
-// =====================
-// Database (LOCAL SQL)
-// =====================
-builder.Services.AddDbContext<InstitutionsContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
+//// =====================
+//// Database (LOCAL SQL)
+//// =====================
+//builder.Services.AddDbContext<InstitutionsContext>(options =>
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+//);
 
 // =====================
 // Services & Repositories
