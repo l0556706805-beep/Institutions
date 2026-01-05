@@ -4,17 +4,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# העתקת כל קבצי csproj עם תת-תיקיות
-COPY ["EducationOrdersAPI/EducationOrdersAPI.csproj", "EducationOrdersAPI/"]
+# העתקת כל הקבצים הראשיים כדי שנוכל למצוא את ה-csproj
+COPY . . 
 
-# Restore packages
-RUN dotnet restore "EducationOrdersAPI/EducationOrdersAPI.csproj"
-
-# העתקת כל הקוד
-COPY . .
-
-# Build ו-Publish
-RUN dotnet publish "EducationOrdersAPI/EducationOrdersAPI.csproj" -c Release -o /app/publish
+# מציאת קובץ csproj ראשון (אם יש כמה, לוקח את הראשון)
+RUN csproj=$(find . -name "*.csproj" | head -n 1) && \
+    echo "Found csproj: $csproj" && \
+    dotnet restore "$csproj" && \
+    dotnet publish "$csproj" -c Release -o /app/publish
 
 # --------------------------
 # Runtime stage
@@ -26,4 +23,4 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # הפעלת האפליקציה
-CMD ["dotnet", "EducationOrdersAPI.dll"]
+CMD ["dotnet", "$(ls /app | grep .dll)"]
