@@ -1,7 +1,7 @@
 # --------------------------
 # שלב Build
 # --------------------------
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 
 # העתקת קובצי csproj בלבד כדי להבטיח caching של restore
@@ -19,7 +19,7 @@ RUN dotnet publish -c Release -o /app/publish
 # --------------------------
 # שלב Runtime
 # --------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
 
 # העתקת הפאבליש משלב הבילד
