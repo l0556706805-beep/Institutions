@@ -1,16 +1,21 @@
 import React, { useEffect, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import { AuthContext } from "../context/AuthContext";
-import { AxiosError } from "axios";
+import { CartContext } from "../context/CartContext";
 import { jwtDecode } from "jwt-decode";
+import "./MyOrders.css";
 
-interface OrderItem {
+interface Product {
   productId: number;
   productName: string;
   price: number;
-  quantity: number;
   unit: string;
-  imageUrl: string;
+  imageUrl?: string;
+}
+
+interface OrderItem extends Product {
+  quantity: number;
 }
 
 interface Order {
@@ -33,59 +38,53 @@ interface DecodedToken {
   [key: string]: any;
 }
 
+const statusMap: { [key: string]: string } = {
+  Pending: "ממתין",
+  Approved: "מאושר",
+  Rejected: "נדחה",
+  Delivered: "נמסר",
+};
+
 const statusColors: { [key: string]: string } = {
-  Pending: "text-yellow-700 bg-yellow-100",
-  Approved: "text-green-700 bg-green-100",
-  Rejected: "text-red-700 bg-red-100",
-  Delivered: "text-blue-700 bg-blue-100",
+  Pending: "status-pending",
+  Approved: "status-approved",
+  Rejected: "status-rejected",
+  Delivered: "status-delivered",
 };
 
 const MyOrders: React.FC = () => {
   const { token } = useContext(AuthContext);
+  const { clearCart, addToCart } = useContext(CartContext);
+  const navigate = useNavigate();
+
   const [userId, setUserId] = useState<number | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
+  // --- Fetch token info
   useEffect(() => {
     if (token) {
       try {
         const decoded: DecodedToken = jwtDecode(token);
         setUserId(Number(decoded.id));
-      } catch (err) {
-        console.error("JWT decode failed:", err);
+      } catch {
         setError("שגיאה בקריאת פרטי המשתמש");
       }
     }
   }, [token]);
 
+  // --- Fetch user's orders
   useEffect(() => {
-    if (!token) {
-      setError("אנא התחבר כדי לראות את ההזמנות שלך");
-      setLoading(false);
-      return;
-    }
-    if (!userId) {
-      setError("טוען פרטי משתמש...");
-      setLoading(true);
-      return;
-    }
+    if (!token || !userId) return;
 
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        setError("");
         const res = await api.get<Order[]>(`/Order/user/${userId}`);
         setOrders(res.data);
-      } catch (err) {
-        console.error(err);
-        if (err instanceof AxiosError) {
-          setError(
-            `שגיאה בטעינת ההזמנות: ${err.response?.status} ${err.response?.statusText}`
-          );
-        } else {
-          setError("שגיאה לא צפויה בטעינת ההזמנות");
-        }
+      } catch {
+        setError("שגיאה בטעינת ההזמנות");
       } finally {
         setLoading(false);
       }
@@ -94,102 +93,71 @@ const MyOrders: React.FC = () => {
     fetchOrders();
   }, [userId, token]);
 
-  const repeatOrder = async (orderId: number) => {
-    try {
-      setLoading(true);
-      await api.post(`/Order/repeat/${orderId}`);
-      alert("ההזמנה נשלחה שוב בהצלחה!");
-      // ניתן לרענן את ההזמנות אחרי חזרה
-      const res = await api.get<Order[]>(`/Order/user/${userId}`);
-      setOrders(res.data);
-    } catch (err) {
-      console.error("שגיאה בביצוע חזרה להזמנה:", err);
-      alert("שגיאה בביצוע חזרה להזמנה, נסה שוב מאוחר יותר");
-    } finally {
-      setLoading(false);
-    }
+  // --- Handle repeat order
+  const handleRepeatOrder = (order: Order) => {
+    // נקה את העגלה
+    clearCart();
+
+    // הוסף את כל הפריטים מההזמנה לעגלה
+    order.items.forEach(item => {
+      addToCart({
+        id: item.productId,
+        name: item.productName,
+        price: item.price,
+        quantity: item.quantity,
+      });
+    });
+
+    // נווט לדף המוצרים
+    navigate("/products");
   };
 
-  if (loading) return <div className="text-center mt-20">טוען הזמנות...</div>;
-  if (error) return <div className="text-center mt-20 text-red-600">{error}</div>;
-  if (orders.length === 0) return <div className="text-center mt-20">אין הזמנות להצגה</div>;
+  if (loading) return <div className="center-text mt-20">טוען הזמנות...</div>;
+  if (error) return <div className="center-text mt-20 error-text">{error}</div>;
+  if (orders.length === 0) return <div className="center-text mt-20">אין הזמנות להצגה</div>;
 
-  return (<div className="container mx-auto p-2 text-sm"> {/* padding קטן יותר */}
-    <h2 className="text-lg font-bold mb-3 text-center text-blue-800">הזמנות שלי</h2>
-    {orders.map((order) => (
-      <div
-        key={order.id}
-        className="mb-4 p-2 border rounded shadow hover:shadow-sm transition-shadow text-sm"
-      >
-        <div className="flex justify-between items-center mb-1">
-          <h3 className="font-semibold text-sm">
-            הזמנה #{order.id} - {order.institutionName}
-          </h3>
-          <span
-            className={`px-2 py-0.5 rounded-full font-semibold text-xs ${statusColors[order.status] || "bg-gray-200 text-gray-700"
-              }`}
-          >
-            {order.status}
-          </span>
-        </div>
-        <p className="mb-1">סכום: <strong>{order.totalAmount} ₪</strong></p>
-        <p className="mb-1 text-xs">
-          תאריך:{" "}
-          {new Date(order.createdAt).toLocaleDateString("he-IL", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </p>
+  return (
+    <div className="orders-container">
+      <h2 className="page-title">הזמנות שלי</h2>
 
-        <table className="w-full border-collapse border border-gray-300 mt-1 text-xs">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-1">תמונה</th>
-              <th className="border p-1">מוצר</th>
-              <th className="border p-1">כמות</th>
-              <th className="border p-1">מחיר</th>
-              <th className="border p-1">יחידה</th>
-            </tr>
-          </thead>
-          <tbody>
-            {order.items.map((item) => (
-              <tr key={item.productId} className="hover:bg-gray-50 transition-colors">
-                <td className="border p-1 text-center">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.productName}
-                    className="w-6 h-4 object-cover rounded" // תמונה קטנה יותר
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://via.placeholder.com/24x16?text=No+Image";
-                    }}
-                  />
-                </td>
-
-                <td className="border p-1">{item.productName}</td>
-                <td className="border p-1 text-center">{item.quantity}</td>
-                <td className="border p-1 text-center">{item.price} ₪</td>
-                <td className="border p-1 text-center">{item.unit}</td>
+      {orders.map(order => (
+        <div key={order.id} className="order-card">
+          <div className="order-header">
+            <h3>הזמנה #{order.id} - {order.institutionName}</h3>
+            <span className={`status-badge ${statusColors[order.status]}`}>
+              {statusMap[order.status]}
+            </span>
+          </div>
+          <p>סכום: <strong>{order.totalAmount} ₪</strong></p>
+          <p className="order-date">תאריך: {new Date(order.createdAt).toLocaleDateString("he-IL")}</p>
+          <table className="items-table">
+            <thead>
+              <tr>
+                <th>מוצר</th>
+                <th>כמות</th>
+                <th>מחיר</th>
+                <th>יחידה</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="mt-2 text-right">
-          <button
-            onClick={() => repeatOrder(order.id)}
-            className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs hover:bg-blue-700 transition-colors"
-          >
-            חזור להזמנה קודמת
-          </button>
+            </thead>
+            <tbody>
+              {order.items.map(item => (
+                <tr key={item.productId}>
+                  <td>{item.productName}</td>
+                  <td>{item.quantity}</td>
+                  <td>{item.price} ₪</td>
+                  <td>{item.unit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="order-actions">
+            <button onClick={() => handleRepeatOrder(order)}>
+              הזמנה חוזרת עם עריכה
+            </button>
+          </div>
         </div>
-      </div>
-    ))}
-  </div>
-
+      ))}
+    </div>
   );
 };
 

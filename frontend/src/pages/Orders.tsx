@@ -1,26 +1,39 @@
 import React, { useEffect, useState } from "react";
 import api from "../api/api";
 import { format } from "date-fns";
+import "./Orders.css";
+
+interface OrderItem {
+  productId: number;
+  productName: string;
+  price: number;
+  quantity: number;
+  unit: string;
+  imageUrl: string;
+}
 
 interface Order {
   id: number;
   institutionId: number;
+  institutionName: string;
   userId: number;
-  totalAmount: number;
-  status: string;
+  userFullName: string;
   createdAt: string;
+  status: string;
+  totalAmount: number;
+  items: OrderItem[];
 }
 
 const statusColors: Record<string, string> = {
-  Pending: "bg-yellow-100 text-yellow-800",
-  Approved: "bg-green-100 text-green-800",
-  Rejected: "bg-red-100 text-red-800",
-  Completed: "bg-blue-100 text-blue-800",
+  Pending: "pending",
+  Approved: "approved",
+  Rejected: "rejected",
+  Completed: "completed",
 };
 
 const OrdersAdmin: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [institutionFilter, setInstitutionFilter] = useState<number | "">("");
@@ -30,6 +43,9 @@ const OrdersAdmin: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 10;
 
+  const [showItemsForOrder, setShowItemsForOrder] = useState<number | null>(null);
+
+  // ------------------- Fetch Orders -------------------
   const fetchOrders = async () => {
     try {
       setLoading(true);
@@ -43,6 +59,11 @@ const OrdersAdmin: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  // ------------------- Update Status -------------------
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     try {
       await api.put(`/order/${orderId}/status`, { newStatus });
@@ -50,18 +71,41 @@ const OrdersAdmin: React.FC = () => {
         prev.map(o => (o.id === orderId ? { ...o, status: newStatus } : o))
       );
     } catch (err) {
-      console.error("Failed to update status", err);
+      console.error(err);
       alert("לא הצלחנו לעדכן את הסטטוס");
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  // ------------------- Toggle Items -------------------
+  const toggleItems = (orderId: number) => {
+    setShowItemsForOrder(showItemsForOrder === orderId ? null : orderId);
+  };
 
+  // ------------------- Print Order -------------------
+  const printOrder = (order: Order) => {
+    const content = `
+הזמנה מספר: ${order.id}
+מוסד: ${order.institutionName}
+משתמש: ${order.userFullName}
+סטטוס: ${order.status}
+תאריך: ${format(new Date(order.createdAt), "dd/MM/yyyy HH:mm")}
+סכום כולל: ${order.totalAmount}₪
+
+פריטים:
+${order.items.map(i => `- ${i.productName} x${i.quantity} (${i.price}₪)`).join("\n")}
+    `;
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(`<pre>${content}</pre>`);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  // ------------------- Filter & Pagination -------------------
   const filteredOrders = orders
     .filter(o => (institutionFilter ? o.institutionId === institutionFilter : true))
-    .filter(o => (userSearch ? o.userId.toString().includes(userSearch) : true))
+    .filter(o => (userSearch ? o.userFullName.toLowerCase().includes(userSearch.toLowerCase()) : true))
     .filter(o => (statusFilter ? o.status === statusFilter : true))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -71,43 +115,40 @@ const OrdersAdmin: React.FC = () => {
   const uniqueInstitutions = Array.from(new Set(orders.map(o => o.institutionId)));
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">ניהול הזמנות</h2>
+    <div className="orders-container">
+      <h2>ניהול הזמנות</h2>
 
-      <div className="flex flex-wrap gap-4 mb-4">
-        <div>
-          <label className="block mb-1">סינון לפי מוסד:</label>
+      {/* Filters */}
+      <div className="filters">
+        <div className="filter-item">
+          <label>סינון לפי מוסד:</label>
           <select
             value={institutionFilter}
             onChange={e => setInstitutionFilter(e.target.value ? Number(e.target.value) : "")}
-            className="border rounded px-2 py-1"
           >
             <option value="">הכל</option>
-            {uniqueInstitutions.map(id => (
-              <option key={id} value={id}>
-                מוסד {id}
-              </option>
-            ))}
+            {uniqueInstitutions.map(id => {
+              const name = orders.find(o => o.institutionId === id)?.institutionName || `מוסד ${id}`;
+              return <option key={id} value={id}>{name}</option>;
+            })}
           </select>
         </div>
 
-        <div>
-          <label className="block mb-1">חיפוש לפי משתמש:</label>
+        <div className="filter-item">
+          <label>חיפוש לפי משתמש:</label>
           <input
             type="text"
-            placeholder="User ID"
+            placeholder="שם משתמש"
             value={userSearch}
             onChange={e => setUserSearch(e.target.value)}
-            className="border rounded px-2 py-1"
           />
         </div>
 
-        <div>
-          <label className="block mb-1">סינון לפי סטטוס:</label>
+        <div className="filter-item">
+          <label>סינון לפי סטטוס:</label>
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="border rounded px-2 py-1"
           >
             <option value="">הכל</option>
             <option value="Pending">ממתין</option>
@@ -119,69 +160,76 @@ const OrdersAdmin: React.FC = () => {
       </div>
 
       {loading && <p>טוען הזמנות...</p>}
-      {error && <p className="text-red-500">{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
       {!loading && !error && (
         <>
-          <div className="overflow-x-auto">
-            <table className="min-w-full border border-gray-300 rounded">
-              <thead className="bg-gray-100">
+          <div className="table-wrapper">
+            <table>
+              <thead>
                 <tr>
-                  <th className="p-2 border-b">#</th>
-                  <th className="p-2 border-b">מוסד</th>
-                  <th className="p-2 border-b">משתמש</th>
-                  <th className="p-2 border-b">סכום כולל</th>
-                  <th className="p-2 border-b">סטטוס</th>
-                  <th className="p-2 border-b">תאריך</th>
+                  <th>#</th>
+                  <th>מוסד</th>
+                  <th>משתמש</th>
+                  <th>סכום כולל</th>
+                  <th>סטטוס</th>
+                  <th>תאריך</th>
+                  <th>פעולות</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedOrders.map(order => (
-                  <tr
-                    key={order.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="p-2 border-b text-center">{order.id}</td>
-                    <td className="p-2 border-b text-center">{order.institutionId}</td>
-                    <td className="p-2 border-b text-center">{order.userId}</td>
-                    <td className="p-2 border-b text-center">{order.totalAmount}₪</td>
-                    <td className="p-2 border-b text-center">
-                      <select
-                        value={order.status}
-                        onChange={e => handleStatusChange(order.id, e.target.value)}
-                        className={`border rounded px-2 py-1 ${statusColors[order.status] || ""}`}
-                      >
-                        <option value="Pending">ממתין</option>
-                        <option value="Approved">מאושר</option>
-                        <option value="Rejected">נדחה</option>
-                        <option value="Completed">הושלם</option>
-                      </select>
-                    </td>
-                    <td className="p-2 border-b text-center">
-                      {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm")}
-                    </td>
-                  </tr>
+                  <React.Fragment key={order.id}>
+                    <tr>
+                      <td>{order.id}</td>
+                      <td>{order.institutionName}</td>
+                      <td>{order.userFullName}</td>
+                      <td>{order.totalAmount}₪</td>
+                      <td>
+                        <select
+                          value={order.status}
+                          onChange={e => handleStatusChange(order.id, e.target.value)}
+                          className={`status-select ${order.status.toLowerCase()}`}
+                        >
+                          <option value="Pending">ממתין</option>
+                          <option value="Approved">מאושר</option>
+                          <option value="Rejected">נדחה</option>
+                          <option value="Completed">הושלם</option>
+                        </select>
+                      </td>
+                      <td>{format(new Date(order.createdAt), "dd/MM/yyyy HH:mm")}</td>
+                      <td>
+                        <button onClick={() => toggleItems(order.id)}>פריטים</button>
+                        <button onClick={() => printOrder(order)}>הדפסה</button>
+                      </td>
+                    </tr>
+
+                    {/* Items with Images */}
+                    {showItemsForOrder === order.id && order.items && (
+                      <tr className="items-row">
+                        <td colSpan={7}>
+                          <ul className="order-items-list">
+                            {order.items.map(item => (
+                              <li key={item.productId} className="order-item">
+                                <img src={item.imageUrl} alt={item.productName} className="item-img" />
+                                <span>{item.productName} x{item.quantity} - {item.price}₪</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className="flex justify-center gap-2 mt-4">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => prev - 1)}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              קודם
-            </button>
-            <span className="px-3 py-1">{currentPage} / {totalPages}</span>
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(prev => prev + 1)}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              הבא
-            </button>
+          {/* Pagination */}
+          <div className="pagination">
+            <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>קודם</button>
+            <span>{currentPage} / {totalPages}</span>
+            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)}>הבא</button>
           </div>
         </>
       )}

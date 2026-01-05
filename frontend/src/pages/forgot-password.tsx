@@ -10,7 +10,6 @@ const ForgotPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setMessage("");
     setError("");
 
@@ -20,17 +19,17 @@ const ForgotPassword = () => {
     }
 
     try {
-      // שולח את השדה עם האות הגדולה E
-      const res = await api.post("/auth/forgot-password", { Email: email });
-      console.log("RESET CODE (dev only):", res.data.resetCode);
+      // שולחים שדה קטן "email" כמו ש־DTO מחכה לו
+      const res = await api.post("/auth/forgot-password", { email });
 
       setMessage("הקוד נשלח בהצלחה למייל!");
+      console.log("Server response:", res.data);
+
       // מעבר אוטומטי לעמוד איפוס סיסמה
       navigate("/reset-password");
-
     } catch (err: any) {
-      setError("ארעה שגיאה. נסי שוב.");
-      console.error(err);
+      setError("ארעה שגיאה בשרת. נסי שוב.");
+      console.error(err.response?.data || err.message);
     }
   };
 
@@ -44,6 +43,7 @@ const ForgotPassword = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
+          required
         /><br/>
         <button type="submit">שלחי קוד איפוס</button>
       </form>

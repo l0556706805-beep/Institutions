@@ -194,8 +194,28 @@ const ProductsAdmin: React.FC = () => {
       </div>
 
       {showModal && (
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(13,71,161,0.2)", display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <div style={{ background: "#e3f2fd", padding: 20, borderRadius: 10, minWidth: 350, maxWidth: 500, boxShadow: "0 4px 15px rgba(0,0,0,0.2)" }}>
+        <div     onClick={closeModal}
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      background: "rgba(13,71,161,0.2)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+     }}>
+          <div style={{
+            background: "#e3f2fd",
+            padding: 20,
+            borderRadius: 10,
+            minWidth: 350,
+            maxWidth: 500,
+            maxHeight: "85vh",      // ⭐ חשוב
+            overflowY: "auto",      // ⭐ חשוב
+            boxShadow: "0 4px 15px rgba(0,0,0,0.2)"
+          }}>
             <h2 style={{ marginBottom: 15, color: "#0d47a1" }}>{modalProduct.id ? "עריכת מוצר" : "מוצר חדש"}</h2>
 
             <input placeholder="שם מוצר" value={modalProduct.name ?? ""} onChange={e => setModalProduct({ ...modalProduct, name: e.target.value })} style={{ width: "100%", marginBottom: 10, padding: 6, borderRadius: 4, border: "1px solid #64b5f6" }} />
@@ -208,29 +228,29 @@ const ProductsAdmin: React.FC = () => {
               {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
 
-<div style={{ marginBottom: 10 }}>
-  <label>תמונה:</label>
-  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-    <input type="file" accept="image/*" onChange={handleImageUpload} />
-    <input
-      type="text"
-      placeholder="או הזן URL לתמונה"
-      value={modalProduct.imageUrl ?? ""}
-      onChange={e => setModalProduct({ ...modalProduct, imageUrl: e.target.value, file: undefined })}
-      style={{ flex: 1, padding: 6, borderRadius: 4, border: "1px solid #64b5f6" }}
-    />
-  </div>
-  {modalProduct.imageUrl && (
-    <img
-      src={modalProduct.imageUrl.startsWith("http") ? modalProduct.imageUrl : `${API_BASE_URL}${modalProduct.imageUrl}`}
-      alt="preview"
-      onError={(e) => {
-        (e.target as HTMLImageElement).src = "https://via.placeholder.com/100x60?text=No+Image";
-      }}
-      style={{ width: 100, height: 60, objectFit: "cover", marginTop: 5, borderRadius: 4 }}
-    />
-  )}
-</div>
+            <div style={{ marginBottom: 10 }}>
+              <label>תמונה:</label>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <input type="file" accept="image/*" onChange={handleImageUpload} />
+                <input
+                  type="text"
+                  placeholder="או הזן URL לתמונה"
+                  value={modalProduct.imageUrl ?? ""}
+                  onChange={e => setModalProduct({ ...modalProduct, imageUrl: e.target.value, file: undefined })}
+                  style={{ flex: 1, padding: 6, borderRadius: 4, border: "1px solid #64b5f6" }}
+                />
+              </div>
+              {modalProduct.imageUrl && (
+                <img
+                  src={modalProduct.imageUrl.startsWith("http") ? modalProduct.imageUrl : `${API_BASE_URL}${modalProduct.imageUrl}`}
+                  alt="preview"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/100x60?text=No+Image";
+                  }}
+                  style={{ width: 100, height: 60, objectFit: "cover", marginTop: 5, borderRadius: 4 }}
+                />
+              )}
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 15 }}>
               <label>פעיל:</label>
               <input type="checkbox" checked={modalProduct.isActive ?? true} onChange={e => setModalProduct({ ...modalProduct, isActive: e.target.checked })} />

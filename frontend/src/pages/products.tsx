@@ -1,12 +1,11 @@
 import React, { useContext, useEffect, useState } from "react";
 import api from "../api/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 
 // --------------------------------------
 // INTERFACES
 // --------------------------------------
-
 interface Product {
   id: number;
   name: string;
@@ -29,17 +28,12 @@ interface CartItem {
   quantity: number;
 }
 
-type SortKey = "name" | "price";
-type SortOrder = "asc" | "desc";
-
 // --------------------------------------
 // COMPONENT
 // --------------------------------------
-
 const Products = () => {
   const navigate = useNavigate();
-
-  // ❗ תיקון השגיאה – שימוש נכון בקונטקסט
+  const location = useLocation();
   const { cart, addToCart, removeFromCart, updateQuantity, clearCart, totalPrice } =
     useContext(CartContext);
 
@@ -47,16 +41,11 @@ const Products = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<number | "">("");
-
-  const [showInStock, setShowInStock] = useState(false); // ⭐ סינון מלאי
-
-  const [sortKey, setSortKey] = useState<SortKey | null>(null);
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [showInStock, setShowInStock] = useState(false);
 
   // --------------------------------------
   // LOAD DATA
   // --------------------------------------
-
   useEffect(() => {
     loadProducts();
     api.get("/Categories").then((res) => setCategories(res.data));
@@ -68,43 +57,35 @@ const Products = () => {
   };
 
   // --------------------------------------
-  // SORT + FILTER
+  // LOAD PREVIOUS ORDER INTO CART
   // --------------------------------------
+  useEffect(() => {
+    if (location.state?.orderItems) {
+      location.state.orderItems.forEach((item: CartItem) => {
+        addToCart(item);
+      });
+    }
+  }, [location.state, addToCart]);
 
-  // const handleSort = (key: SortKey) => {
-  //   if (sortKey === key) {
-  //     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-  //   } else {
-  //     setSortKey(key);
-  //     setSortOrder("asc");
-  //   }
-  // };
-
-  const getQuantityInCart = (productId: number) => {
-    const item = cart.find((c) => c.id === productId);
-    return item ? item.quantity : 0;
-  };
-
+  // --------------------------------------
+  // FILTER + SEARCH
+  // --------------------------------------
   const filteredProducts = products
     .filter((p) => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.trim().toLowerCase());
       const matchesCategory = categoryFilter === "" ? true : p.categoryId === categoryFilter;
       const matchesStock = showInStock ? p.stock > 0 : true;
       return matchesSearch && matchesCategory && matchesStock;
-    })
-    .sort((a, b) => {
-      if (!sortKey) return 0;
-      if (sortKey === "name")
-        return sortOrder === "asc"
-          ? a.name.localeCompare(b.name)
-          : b.name.localeCompare(a.name);
-      return sortOrder === "asc" ? a.price - b.price : b.price - a.price;
     });
+
+  const getQuantityInCart = (productId: number) => {
+    const item = cart.find((c) => c.id === productId);
+    return item ? item.quantity : 0;
+  };
 
   // --------------------------------------
   // STYLES
   // --------------------------------------
-
   const containerStyle: React.CSSProperties = {
     display: "flex",
     gap: 15,
@@ -205,7 +186,6 @@ const Products = () => {
   // --------------------------------------
   // UI
   // --------------------------------------
-
   return (
     <div>
       {/* TOP BAR */}
@@ -252,12 +232,11 @@ const Products = () => {
           ))}
         </select>
 
-        {/* FILTER BY STOCK */}
         <button
           onClick={() => setShowInStock((prev) => !prev)}
           style={{ ...buttonStyle, backgroundColor: showInStock ? "#2ecc71" : "#4a90e2" }}
         >
-          {showInStock ? "הצג הכל" : "הצג רק מוצרים הקיימים במלאי"}
+          {showInStock ? "הצג הכל" : "הצג רק מוצרים קיימים במלאי"}
         </button>
       </div>
 
