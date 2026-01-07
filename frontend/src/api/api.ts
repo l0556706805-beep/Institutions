@@ -2,7 +2,7 @@ import axios from "axios";
 
 // יצירת מופע API
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: process.env.REACT_APP_API_URL || "/api",
 });
 
 // פונקציה שמגדירה את הטוקן בגלובל

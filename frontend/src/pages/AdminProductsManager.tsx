@@ -20,7 +20,7 @@ interface Category {
   name: string;
 }
 
-const API_BASE_URL = "https://localhost:44378"; // כתובת ה-API שלך
+const API_BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/api\/?$/, ""); // כתובת ה-API (בלי /api)
 
 const ProductsAdmin: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);

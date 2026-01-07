@@ -95,11 +95,25 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",          // local dev
-                "https://localhost:3000",         // local HTTPS
-                "https://b82a5448.institutions-czw.pages.dev" // deployed frontend
-            )
+        policy
+            .SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrWhiteSpace(origin)) return false;
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+
+                // local dev
+                if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) && uri.Port == 3000)
+                    return true;
+
+                // Cloudflare deployments
+                if (uri.Host.EndsWith(".workers.dev", StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                if (uri.Host.EndsWith(".pages.dev", StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                return false;
+            })
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
