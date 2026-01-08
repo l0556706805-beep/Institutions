@@ -81,7 +81,7 @@ const MyOrders: React.FC = () => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const res = await api.get<Order[]>(`/Order/user/${userId}`);
+        const res = await api.get<Order[]>(`/order/user/${userId}`);
         setOrders(res.data);
       } catch {
         setError("שגיאה בטעינת ההזמנות");

@@ -86,7 +86,7 @@ const Cart: React.FC = () => {
 
       console.log("Sending order:", orderRequest);
 
-      const res = await api.post("/Order", orderRequest, {
+      const res = await api.post("/order", orderRequest, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("Order response:", res.data);
