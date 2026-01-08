@@ -1,8 +1,16 @@
 import axios from "axios";
 
+// Get API URL from runtime config (loaded in index.html) or fallback to env var or /api
+const getApiUrl = () => {
+  if (typeof window !== 'undefined' && (window as any).APP_CONFIG?.API_URL) {
+    return (window as any).APP_CONFIG.API_URL;
+  }
+  return process.env.REACT_APP_API_URL || "/api";
+};
+
 // יצירת מופע API
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "/api",
+  baseURL: getApiUrl(),
 });
 
 // פונקציה שמגדירה את הטוקן בגלובל
