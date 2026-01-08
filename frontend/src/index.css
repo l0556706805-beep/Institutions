@@ -1,13 +1,435 @@
-body {
+/* ====================================
+   🎓 מערכת הזמנות מוסדות חינוך
+   עיצוב מודרני ומרשים
+   ==================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  /* צבעים ראשיים - גרדיינט כחול-סגול */
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  --warning-gradient: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%);
+  --danger-gradient: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+  
+  /* צבעים בסיסיים */
+  --primary: #667eea;
+  --primary-dark: #5a67d8;
+  --secondary: #764ba2;
+  --accent: #f093fb;
+  --success: #38ef7d;
+  --warning: #f2c94c;
+  --danger: #f45c43;
+  
+  /* ניטרליים */
+  --bg-light: #f8faff;
+  --bg-card: #ffffff;
+  --text-dark: #1a202c;
+  --text-medium: #4a5568;
+  --text-light: #718096;
+  --border-light: #e2e8f0;
+  
+  /* צללים */
+  --shadow-sm: 0 2px 8px rgba(102, 126, 234, 0.15);
+  --shadow-md: 0 8px 25px rgba(102, 126, 234, 0.2);
+  --shadow-lg: 0 15px 50px rgba(102, 126, 234, 0.25);
+  --shadow-glow: 0 0 40px rgba(102, 126, 234, 0.3);
+  
+  /* מרווחים */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  
+  /* רדיוס */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 30px;
+  --radius-full: 50px;
+  
+  /* טרנזישנים */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+* {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--bg-light);
+  color: var(--text-dark);
+  direction: rtl;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* רקע אנימטיבי */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(240, 147, 251, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: -1;
+  animation: bgPulse 15s ease-in-out infinite;
+}
+
+@keyframes bgPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+/* ====================================
+   כפתורים כלליים
+   ==================================== */
+button {
+  font-family: 'Heebo', sans-serif;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all var(--transition-normal);
+}
+
+.btn-primary {
+  background: var(--primary-gradient);
+  color: white;
+  padding: 12px 28px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-primary:active {
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: var(--success-gradient);
+  color: white;
+  padding: 10px 24px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(56, 239, 125, 0.3);
+}
+
+.btn-danger {
+  background: var(--danger-gradient);
+  color: white;
+  padding: 10px 24px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(244, 92, 67, 0.3);
+}
+
+/* ====================================
+   אינפוטים
+   ==================================== */
+input, select, textarea {
+  font-family: 'Heebo', sans-serif;
+  padding: 14px 20px;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  transition: all var(--transition-normal);
+  background: white;
+  width: 100%;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+}
+
+input::placeholder {
+  color: var(--text-light);
+}
+
+/* ====================================
+   כרטיסים
+   ==================================== */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary-gradient);
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card:hover::before {
+  transform: scaleX(1);
+}
+
+/* ====================================
+   טבלאות
+   ==================================== */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+thead {
+  background: var(--primary-gradient);
+}
+
+thead th {
+  color: white;
+  font-weight: 600;
+  padding: 18px 15px;
+  text-align: center;
+}
+
+tbody tr {
+  transition: all var(--transition-fast);
+}
+
+tbody tr:hover {
+  background: rgba(102, 126, 234, 0.05);
+}
+
+tbody td {
+  padding: 16px 15px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-light);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ====================================
+   אנימציות כניסה
+   ==================================== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4); }
+  50% { box-shadow: 0 0 0 15px rgba(102, 126, 234, 0); }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ====================================
+   סקרולבר מעוצב
+   ==================================== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-light);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-gradient);
+  border-radius: 10px;
+  border: 2px solid var(--bg-light);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary);
+}
+
+/* ====================================
+   בחירת טקסט
+   ==================================== */
+::selection {
+  background: rgba(102, 126, 234, 0.3);
+  color: var(--text-dark);
+}
+
+/* ====================================
+   טיפים וסטטוסים
+   ==================================== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: rgba(56, 239, 125, 0.15);
+  color: #0d9f5f;
+}
+
+.badge-warning {
+  background: rgba(242, 201, 76, 0.15);
+  color: #b7791f;
+}
+
+.badge-danger {
+  background: rgba(244, 92, 67, 0.15);
+  color: #c53030;
+}
+
+.badge-info {
+  background: rgba(102, 126, 234, 0.15);
+  color: var(--primary);
+}
+
+/* ====================================
+   לואדר
+   ==================================== */
+.loader {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--border-light);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: rotate 1s linear infinite;
+}
+
+/* ====================================
+   רספונסיביות
+   ==================================== */
+@media (max-width: 768px) {
+  :root {
+    --spacing-xl: 1.5rem;
+    --spacing-2xl: 2rem;
+  }
+  
+  body {
+    font-size: 14px;
+  }
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }

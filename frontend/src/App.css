@@ -1,20 +1,30 @@
+/* ====================================
+   🎓 App.css - עיצוב ראשי
+   ==================================== */
+
 .App {
   text-align: center;
+  min-height: 100vh;
+  position: relative;
 }
 
+/* ====================================
+   לוגו מסתובב
+   ==================================== */
 .App-logo {
   height: 40vmin;
   pointer-events: none;
+  filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.5));
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+    animation: App-logo-float 6s ease-in-out infinite;
   }
 }
 
 .App-header {
-  background-color: #282c34;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -22,18 +32,284 @@
   justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.App-header::before {
+  content: '';
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: 
+    radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: moveStars 100s linear infinite;
+}
+
+@keyframes moveStars {
+  from { transform: translateY(0) translateX(0); }
+  to { transform: translateY(-50%) translateX(-50%); }
 }
 
 .App-link {
-  color: #61dafb;
+  color: #f093fb;
+  text-decoration: none;
+  font-weight: 600;
+  position: relative;
+  transition: all 0.3s ease;
 }
 
-@keyframes App-logo-spin {
+.App-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #f093fb;
+  transition: width 0.3s ease;
+}
+
+.App-link:hover::after {
+  width: 100%;
+}
+
+@keyframes App-logo-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.5));
+  }
+  25% {
+    transform: translateY(-15px) rotate(5deg);
+    filter: drop-shadow(0 10px 30px rgba(102, 126, 234, 0.6));
+  }
+  50% {
+    transform: translateY(0) rotate(0deg);
+    filter: drop-shadow(0 0 25px rgba(118, 75, 162, 0.5));
+  }
+  75% {
+    transform: translateY(-10px) rotate(-5deg);
+    filter: drop-shadow(0 10px 30px rgba(240, 147, 251, 0.5));
+  }
+}
+
+/* ====================================
+   דף התחברות מעוצב
+   ==================================== */
+.login-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.login-page h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.login-page h2::after {
+  content: '🎓';
+  position: absolute;
+  top: -20px;
+  right: -40px;
+  font-size: 2rem;
+  animation: float 3s ease-in-out infinite;
+  -webkit-text-fill-color: initial;
+}
+
+.login-page form {
+  background: white;
+  padding: 50px 40px;
+  border-radius: 24px;
+  box-shadow: 
+    0 20px 60px rgba(102, 126, 234, 0.15),
+    0 0 0 1px rgba(102, 126, 234, 0.05);
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-page form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.login-page input {
+  width: 100%;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-family: 'Heebo', sans-serif;
+  transition: all 0.3s ease;
+  background: #f8faff;
+}
+
+.login-page input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.login-page button[type="submit"] {
+  width: 100%;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: 'Heebo', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-page button[type="submit"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.login-page button[type="submit"]:hover::before {
+  left: 100%;
+}
+
+.login-page button[type="submit"]:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(102, 126, 234, 0.35);
+}
+
+.login-page button[type="submit"]:active {
+  transform: translateY(-1px);
+}
+
+/* ====================================
+   עמוד מחובר
+   ==================================== */
+.login-page > div:first-of-type {
+  text-align: center;
+  background: white;
+  padding: 60px 50px;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.15);
+  animation: scaleIn 0.5s ease-out;
+}
+
+.login-page > div:first-of-type h2 {
+  margin-bottom: 30px;
+}
+
+.login-page > div:first-of-type button {
+  background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+  color: white;
+  padding: 14px 40px;
+  border: none;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-page > div:first-of-type button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(235, 51, 73, 0.3);
+}
+
+/* ====================================
+   אנימציות גלובליות
+   ==================================== */
+@keyframes fadeInUp {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: translateY(30px);
   }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* ====================================
+   עמוד שחזור סיסמה
+   ==================================== */
+.forgot-password-page,
+.reset-password-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ====================================
+   רספונסיביות
+   ==================================== */
+@media (max-width: 480px) {
+  .login-page form {
+    padding: 40px 25px;
+    margin: 0 15px;
   }
   
+  .login-page h2 {
+    font-size: 2rem;
+  }
+  
+  .login-page h2::after {
+    display: none;
+  }
 }
