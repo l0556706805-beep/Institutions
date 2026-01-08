@@ -1,7 +1,10 @@
 import axios from "axios";
 
-// API URL - hardcoded for production reliability
-const API_URL = "https://institutions-93gl.onrender.com/api";
+// API URL - priority: environment variable > config.js > hardcoded fallback
+const API_URL = 
+  process.env.REACT_APP_API_URL || 
+  (window as any).APP_CONFIG?.API_URL || 
+  "https://institutions-93gl.onrender.com/api";
 
 // יצירת מופע API
 const api = axios.create({
@@ -37,5 +40,7 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+console.log("API baseURL:", API_URL);
 
 export default api;
