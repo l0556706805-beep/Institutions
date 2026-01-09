@@ -42,9 +42,6 @@ api.defaults.baseURL = correctApiUrl;
 
 // Interceptor to ensure baseURL is always correct on every request
 api.interceptors.request.use((config) => {
-  // CRITICAL: Always use hardcoded backend URL - never rely on variables
-  const BACKEND_BASE = "https://institutions-93gl.onrender.com/api";
-  
   // Extract path from config.url (handle both relative and absolute URLs)
   const originalUrl = config.url || '';
   let path = originalUrl;
@@ -66,8 +63,9 @@ api.interceptors.request.use((config) => {
     path = '/' + path;
   }
   
-  // Build the complete absolute URL - CRITICAL: use string concatenation directly
-  const fullUrl = BACKEND_BASE.replace(/\/$/, '') + path;
+  // CRITICAL: Build the complete absolute URL using string literal directly
+  // This ensures the URL is always correct regardless of any variable issues
+  const fullUrl = "https://institutions-93gl.onrender.com/api" + path;
   
   // ALWAYS set the full URL directly - this is the only way to guarantee it works
   config.url = fullUrl;
@@ -75,7 +73,6 @@ api.interceptors.request.use((config) => {
   
   // Debug logging
   console.log("Interceptor Debug:");
-  console.log("  BACKEND_BASE:", BACKEND_BASE);
   console.log("  originalUrl:", originalUrl);
   console.log("  path:", path);
   console.log("  fullUrl:", fullUrl);
