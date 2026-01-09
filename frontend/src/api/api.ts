@@ -42,10 +42,10 @@ api.defaults.baseURL = correctApiUrl;
 
 // Interceptor to ensure baseURL is always correct on every request
 api.interceptors.request.use((config) => {
-  // Always override baseURL to ensure it's the backend URL
-  const currentCorrectUrl = getApiUrl();
+  // ALWAYS use BACKEND_API_URL directly - don't rely on getApiUrl() which might be corrupted
+  const backendUrl = BACKEND_API_URL;
   
-  console.log("Interceptor - currentCorrectUrl:", currentCorrectUrl, "config.url:", config.url);
+  console.log("Interceptor - backendUrl:", backendUrl, "config.url:", config.url);
   
   // ALWAYS build the full absolute URL directly
   // This is the most reliable way to ensure the correct backend URL is used
@@ -73,34 +73,22 @@ api.interceptors.request.use((config) => {
       path = '/' + path;
     }
     
-    // Build the full absolute URL - CRITICAL: currentCorrectUrl must be a valid URL
-    if (!currentCorrectUrl || currentCorrectUrl === '' || !currentCorrectUrl.startsWith('http')) {
-      console.error("ERROR: currentCorrectUrl is invalid:", currentCorrectUrl, "using BACKEND_API_URL");
-      const fallbackUrl = BACKEND_API_URL.replace(/\/$/, '') + path;
-      config.url = fallbackUrl;
-      config.baseURL = undefined;
-      console.log("Built full URL with fallback:", fallbackUrl);
-    } else {
-      const fullUrl = currentCorrectUrl.replace(/\/$/, '') + path;
-      config.url = fullUrl;
-      config.baseURL = undefined; // Clear baseURL when using absolute URL
-      console.log("Built full URL:", fullUrl);
-    }
+    // Build the full absolute URL using BACKEND_API_URL directly
+    const fullUrl = backendUrl.replace(/\/$/, '') + path;
+    config.url = fullUrl;
+    config.baseURL = undefined; // Clear baseURL when using absolute URL
+    
+    console.log("Built full URL:", fullUrl);
   } else {
     // No URL, use baseURL
-    if (!currentCorrectUrl || currentCorrectUrl === '' || !currentCorrectUrl.startsWith('http')) {
-      console.error("ERROR: currentCorrectUrl is invalid for baseURL:", currentCorrectUrl);
-      config.baseURL = BACKEND_API_URL;
-    } else {
-      config.baseURL = currentCorrectUrl;
-    }
+    config.baseURL = backendUrl;
   }
   
   // Final check - ensure URL is correct
   const finalUrl = config.url || (config.baseURL ? (config.baseURL + (config.url || '')) : '');
   if (finalUrl.includes('.pages.dev') || finalUrl.includes('localhost') || !finalUrl.startsWith('http')) {
     console.error("ERROR: URL is invalid:", finalUrl, "forcing correct URL");
-    // Force correct URL
+    // Force correct URL using BACKEND_API_URL directly
     if (config.url) {
       let path = config.url;
       if (config.url.startsWith('http://') || config.url.startsWith('https://')) {
@@ -114,10 +102,10 @@ api.interceptors.request.use((config) => {
       if (!path.startsWith('/')) {
         path = '/' + path;
       }
-      config.url = BACKEND_API_URL.replace(/\/$/, '') + path;
+      config.url = backendUrl.replace(/\/$/, '') + path;
       config.baseURL = undefined;
     } else {
-      config.baseURL = BACKEND_API_URL;
+      config.baseURL = backendUrl;
     }
   }
   
