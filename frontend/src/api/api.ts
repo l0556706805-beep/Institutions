@@ -5,26 +5,28 @@ import axios from "axios";
 const BACKEND_API_URL = "https://institutions-93gl.onrender.com/api";
 
 const getApiUrl = () => {
-  // Check if config.js has loaded and has a valid API_URL
+  // Always use the hardcoded backend URL to ensure correct API endpoint
+  // This prevents issues with config.js or environment variables pointing to frontend domain
   const appConfig = (window as any).APP_CONFIG;
-  if (appConfig?.API_URL) {
-    const configUrl = appConfig.API_URL;
-    // Validate that it's not the frontend domain
-    if (!configUrl.includes('.pages.dev') && !configUrl.includes('localhost')) {
-      console.log("Using API_URL from config.js:", configUrl);
-      return configUrl;
-    }
-    console.warn("config.js contains invalid API_URL (frontend domain), using fallback");
+  const configUrl = appConfig?.API_URL;
+  const envUrl = process.env.REACT_APP_API_URL;
+  
+  // Validate config.js URL if it exists
+  if (configUrl && !configUrl.includes('.pages.dev') && !configUrl.includes('localhost') && configUrl.includes('institutions-93gl.onrender.com')) {
+    console.log("Using API_URL from config.js:", configUrl);
+    return configUrl;
   }
   
-  // Fallback to environment variable (set during build) or hardcoded URL
-  const envUrl = process.env.REACT_APP_API_URL;
-  if (envUrl && !envUrl.includes('.pages.dev') && !envUrl.includes('localhost')) {
+  // Validate environment variable URL if it exists
+  if (envUrl && !envUrl.includes('.pages.dev') && !envUrl.includes('localhost') && envUrl.includes('institutions-93gl.onrender.com')) {
     console.log("Using API_URL from environment variable:", envUrl);
     return envUrl;
   }
   
   // Always fallback to the hardcoded backend URL
+  if (configUrl && (configUrl.includes('.pages.dev') || configUrl.includes('localhost'))) {
+    console.warn("config.js contains invalid API_URL (frontend domain), using hardcoded backend URL");
+  }
   console.log("Using hardcoded backend API_URL:", BACKEND_API_URL);
   return BACKEND_API_URL;
 };
