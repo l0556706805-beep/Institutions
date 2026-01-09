@@ -42,74 +42,37 @@ api.defaults.baseURL = correctApiUrl;
 
 // Interceptor to ensure baseURL is always correct on every request
 api.interceptors.request.use((config) => {
-  // ALWAYS use the hardcoded backend URL string directly - no variables
-  const BACKEND_URL = "https://institutions-93gl.onrender.com/api";
+  // CRITICAL: Always use hardcoded backend URL - never rely on variables
+  const BACKEND_BASE = "https://institutions-93gl.onrender.com/api";
   
-  console.log("Interceptor - BACKEND_URL:", BACKEND_URL, "config.url:", config.url);
+  // Extract path from config.url (handle both relative and absolute URLs)
+  let path = config.url || '';
   
-  // ALWAYS build the full absolute URL directly
-  if (config.url) {
-    let path = config.url;
-    
-    // If URL is absolute, extract the path
-    if (config.url.startsWith('http://') || config.url.startsWith('https://')) {
-      try {
-        const urlObj = new URL(config.url);
-        path = urlObj.pathname + urlObj.search;
-        console.log("Extracted path from absolute URL:", path);
-      } catch (e) {
-        console.error("Error parsing absolute URL:", e);
-        // If parsing fails, try to extract path manually
-        const match = config.url.match(/https?:\/\/[^\/]+(\/.*)/);
-        if (match) {
-          path = match[1];
-        }
-      }
-    }
-    
-    // Ensure path starts with /
-    if (!path.startsWith('/')) {
-      path = '/' + path;
-    }
-    
-    // Build the full absolute URL using hardcoded string
-    const fullUrl = BACKEND_URL.replace(/\/$/, '') + path;
-    config.url = fullUrl;
-    config.baseURL = undefined; // Clear baseURL when using absolute URL
-    
-    console.log("Built full URL:", fullUrl);
-  } else {
-    // No URL, use baseURL
-    config.baseURL = BACKEND_URL;
-  }
-  
-  // Final check - ensure URL is correct
-  const finalUrl = config.url || (config.baseURL ? (config.baseURL + (config.url || '')) : '');
-  if (finalUrl.includes('.pages.dev') || finalUrl.includes('localhost') || !finalUrl.startsWith('http')) {
-    console.error("ERROR: URL is invalid:", finalUrl, "forcing correct URL");
-    // Force correct URL using hardcoded string
-    if (config.url) {
-      let path = config.url;
-      if (config.url.startsWith('http://') || config.url.startsWith('https://')) {
-        try {
-          const urlObj = new URL(config.url);
-          path = urlObj.pathname + urlObj.search;
-        } catch (e) {
-          path = config.url.replace(/^https?:\/\/[^\/]+/, '') || config.url;
-        }
-      }
-      if (!path.startsWith('/')) {
-        path = '/' + path;
-      }
-      config.url = BACKEND_URL.replace(/\/$/, '') + path;
-      config.baseURL = undefined;
-    } else {
-      config.baseURL = BACKEND_URL;
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    // If absolute URL, extract just the path
+    try {
+      const urlObj = new URL(path);
+      path = urlObj.pathname + urlObj.search;
+    } catch (e) {
+      // Fallback: extract path manually
+      const match = path.match(/https?:\/\/[^\/]+(\/.*)/);
+      path = match ? match[1] : '/';
     }
   }
   
-  const finalCheckUrl = config.url || (config.baseURL ? (config.baseURL + (config.url || '')) : '');
-  console.log("Request config - baseURL:", config.baseURL, "url:", config.url, "final URL:", finalCheckUrl);
+  // Ensure path starts with /
+  if (!path.startsWith('/')) {
+    path = '/' + path;
+  }
+  
+  // Build the complete absolute URL
+  const fullUrl = BACKEND_BASE.replace(/\/$/, '') + path;
+  
+  // ALWAYS set the full URL directly - this is the only way to guarantee it works
+  config.url = fullUrl;
+  config.baseURL = undefined; // Must be undefined when using absolute URL
+  
+  console.log("Interceptor - Original URL:", config.url, "Path:", path, "Full URL:", fullUrl);
   
   return config;
 });
