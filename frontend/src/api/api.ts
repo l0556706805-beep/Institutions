@@ -1,9 +1,10 @@
 import axios from "axios";
 
-// API URL - priority: environment variable > config.js > hardcoded fallback
+// API URL - priority: config.js (runtime) > environment variable (build time) > hardcoded fallback
+// Note: window.APP_CONFIG is loaded from /config.js at runtime, so it works after deployment
 const API_URL = 
-  process.env.REACT_APP_API_URL || 
   (window as any).APP_CONFIG?.API_URL || 
+  process.env.REACT_APP_API_URL || 
   "https://institutions-93gl.onrender.com/api";
 
 // יצירת מופע API
