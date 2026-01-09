@@ -45,6 +45,8 @@ api.interceptors.request.use((config) => {
   // Always override baseURL to ensure it's the backend URL
   const currentCorrectUrl = getApiUrl();
   
+  console.log("Interceptor - currentCorrectUrl:", currentCorrectUrl, "config.url:", config.url);
+  
   // ALWAYS build the full absolute URL directly
   // This is the most reliable way to ensure the correct backend URL is used
   if (config.url) {
@@ -55,7 +57,9 @@ api.interceptors.request.use((config) => {
       try {
         const urlObj = new URL(config.url);
         path = urlObj.pathname + urlObj.search;
+        console.log("Extracted path from absolute URL:", path);
       } catch (e) {
+        console.error("Error parsing absolute URL:", e);
         // If parsing fails, try to extract path manually
         const match = config.url.match(/https?:\/\/[^\/]+(\/.*)/);
         if (match) {
@@ -69,28 +73,51 @@ api.interceptors.request.use((config) => {
       path = '/' + path;
     }
     
-    // Build the full absolute URL
-    const fullUrl = currentCorrectUrl.replace(/\/$/, '') + path;
-    config.url = fullUrl;
-    config.baseURL = undefined; // Clear baseURL when using absolute URL
-    
-    console.log("Built full URL:", fullUrl);
+    // Build the full absolute URL - CRITICAL: currentCorrectUrl must be a valid URL
+    if (!currentCorrectUrl || currentCorrectUrl === '' || !currentCorrectUrl.startsWith('http')) {
+      console.error("ERROR: currentCorrectUrl is invalid:", currentCorrectUrl, "using BACKEND_API_URL");
+      const fallbackUrl = BACKEND_API_URL.replace(/\/$/, '') + path;
+      config.url = fallbackUrl;
+      config.baseURL = undefined;
+      console.log("Built full URL with fallback:", fallbackUrl);
+    } else {
+      const fullUrl = currentCorrectUrl.replace(/\/$/, '') + path;
+      config.url = fullUrl;
+      config.baseURL = undefined; // Clear baseURL when using absolute URL
+      console.log("Built full URL:", fullUrl);
+    }
   } else {
     // No URL, use baseURL
-    config.baseURL = currentCorrectUrl;
+    if (!currentCorrectUrl || currentCorrectUrl === '' || !currentCorrectUrl.startsWith('http')) {
+      console.error("ERROR: currentCorrectUrl is invalid for baseURL:", currentCorrectUrl);
+      config.baseURL = BACKEND_API_URL;
+    } else {
+      config.baseURL = currentCorrectUrl;
+    }
   }
   
   // Final check - ensure URL is correct
   const finalUrl = config.url || (config.baseURL ? (config.baseURL + (config.url || '')) : '');
-  if (finalUrl.includes('.pages.dev') || finalUrl.includes('localhost')) {
-    console.error("ERROR: URL still contains frontend domain:", finalUrl);
+  if (finalUrl.includes('.pages.dev') || finalUrl.includes('localhost') || !finalUrl.startsWith('http')) {
+    console.error("ERROR: URL is invalid:", finalUrl, "forcing correct URL");
     // Force correct URL
     if (config.url) {
-      const path = config.url.replace(/^https?:\/\/[^\/]+/, '') || config.url;
-      config.url = currentCorrectUrl.replace(/\/$/, '') + (path.startsWith('/') ? path : '/' + path);
+      let path = config.url;
+      if (config.url.startsWith('http://') || config.url.startsWith('https://')) {
+        try {
+          const urlObj = new URL(config.url);
+          path = urlObj.pathname + urlObj.search;
+        } catch (e) {
+          path = config.url.replace(/^https?:\/\/[^\/]+/, '') || config.url;
+        }
+      }
+      if (!path.startsWith('/')) {
+        path = '/' + path;
+      }
+      config.url = BACKEND_API_URL.replace(/\/$/, '') + path;
       config.baseURL = undefined;
     } else {
-      config.baseURL = currentCorrectUrl;
+      config.baseURL = BACKEND_API_URL;
     }
   }
   
