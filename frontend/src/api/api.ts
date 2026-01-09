@@ -31,17 +31,41 @@ const getApiUrl = () => {
   return BACKEND_API_URL;
 };
 
-// יצירת מופע API
+// יצירת מופע API - Always use the hardcoded backend URL
+const correctApiUrl = getApiUrl();
 const api = axios.create({
-  baseURL: getApiUrl(),
+  baseURL: correctApiUrl,
 });
 
-// Interceptor to update baseURL dynamically if config.js loads after axios is created
+// Update defaults to ensure baseURL is always correct
+api.defaults.baseURL = correctApiUrl;
+
+// Interceptor to ensure baseURL is always correct on every request
 api.interceptors.request.use((config) => {
-  const currentBaseUrl = getApiUrl();
-  if (config.baseURL !== currentBaseUrl) {
-    config.baseURL = currentBaseUrl;
+  // Always override baseURL to ensure it's the backend URL
+  const currentCorrectUrl = getApiUrl();
+  config.baseURL = currentCorrectUrl;
+  api.defaults.baseURL = currentCorrectUrl;
+  
+  // Also ensure the full URL is correct
+  if (config.url) {
+    // If URL is absolute and points to frontend domain, extract path and use correct baseURL
+    if (config.url.startsWith('http://') || config.url.startsWith('https://')) {
+      try {
+        const urlObj = new URL(config.url);
+        // If URL points to frontend domain, extract path
+        if (urlObj.hostname.includes('.pages.dev') || urlObj.hostname.includes('localhost')) {
+          config.url = urlObj.pathname + urlObj.search;
+          config.baseURL = currentCorrectUrl;
+        }
+      } catch (e) {
+        // If URL parsing fails, just use the correct baseURL
+        config.baseURL = currentCorrectUrl;
+      }
+    }
   }
+  
+  console.log("Request config - baseURL:", config.baseURL, "url:", config.url);
   return config;
 });
 
