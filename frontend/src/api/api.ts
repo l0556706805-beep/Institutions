@@ -1,14 +1,32 @@
 import axios from "axios";
 
-// API URL - priority: config.js (runtime) > environment variable (build time) > hardcoded fallback
-// Note: window.APP_CONFIG is loaded from /config.js at runtime, so it works after deployment
+// API URL - Always use the backend API URL, never the frontend domain
+// Priority: config.js (runtime) > environment variable (build time) > hardcoded fallback
+const BACKEND_API_URL = "https://institutions-93gl.onrender.com/api";
+
 const getApiUrl = () => {
-  // Check if config.js has loaded
-  if ((window as any).APP_CONFIG?.API_URL) {
-    return (window as any).APP_CONFIG.API_URL;
+  // Check if config.js has loaded and has a valid API_URL
+  const appConfig = (window as any).APP_CONFIG;
+  if (appConfig?.API_URL) {
+    const configUrl = appConfig.API_URL;
+    // Validate that it's not the frontend domain
+    if (!configUrl.includes('.pages.dev') && !configUrl.includes('localhost')) {
+      console.log("Using API_URL from config.js:", configUrl);
+      return configUrl;
+    }
+    console.warn("config.js contains invalid API_URL (frontend domain), using fallback");
   }
+  
   // Fallback to environment variable (set during build) or hardcoded URL
-  return process.env.REACT_APP_API_URL || "https://institutions-93gl.onrender.com/api";
+  const envUrl = process.env.REACT_APP_API_URL;
+  if (envUrl && !envUrl.includes('.pages.dev') && !envUrl.includes('localhost')) {
+    console.log("Using API_URL from environment variable:", envUrl);
+    return envUrl;
+  }
+  
+  // Always fallback to the hardcoded backend URL
+  console.log("Using hardcoded backend API_URL:", BACKEND_API_URL);
+  return BACKEND_API_URL;
 };
 
 // יצירת מופע API
