@@ -42,13 +42,12 @@ api.defaults.baseURL = correctApiUrl;
 
 // Interceptor to ensure baseURL is always correct on every request
 api.interceptors.request.use((config) => {
-  // ALWAYS use BACKEND_API_URL directly - don't rely on getApiUrl() which might be corrupted
-  const backendUrl = BACKEND_API_URL;
+  // ALWAYS use the hardcoded backend URL string directly - no variables
+  const BACKEND_URL = "https://institutions-93gl.onrender.com/api";
   
-  console.log("Interceptor - backendUrl:", backendUrl, "config.url:", config.url);
+  console.log("Interceptor - BACKEND_URL:", BACKEND_URL, "config.url:", config.url);
   
   // ALWAYS build the full absolute URL directly
-  // This is the most reliable way to ensure the correct backend URL is used
   if (config.url) {
     let path = config.url;
     
@@ -73,22 +72,22 @@ api.interceptors.request.use((config) => {
       path = '/' + path;
     }
     
-    // Build the full absolute URL using BACKEND_API_URL directly
-    const fullUrl = backendUrl.replace(/\/$/, '') + path;
+    // Build the full absolute URL using hardcoded string
+    const fullUrl = BACKEND_URL.replace(/\/$/, '') + path;
     config.url = fullUrl;
     config.baseURL = undefined; // Clear baseURL when using absolute URL
     
     console.log("Built full URL:", fullUrl);
   } else {
     // No URL, use baseURL
-    config.baseURL = backendUrl;
+    config.baseURL = BACKEND_URL;
   }
   
   // Final check - ensure URL is correct
   const finalUrl = config.url || (config.baseURL ? (config.baseURL + (config.url || '')) : '');
   if (finalUrl.includes('.pages.dev') || finalUrl.includes('localhost') || !finalUrl.startsWith('http')) {
     console.error("ERROR: URL is invalid:", finalUrl, "forcing correct URL");
-    // Force correct URL using BACKEND_API_URL directly
+    // Force correct URL using hardcoded string
     if (config.url) {
       let path = config.url;
       if (config.url.startsWith('http://') || config.url.startsWith('https://')) {
@@ -102,10 +101,10 @@ api.interceptors.request.use((config) => {
       if (!path.startsWith('/')) {
         path = '/' + path;
       }
-      config.url = backendUrl.replace(/\/$/, '') + path;
+      config.url = BACKEND_URL.replace(/\/$/, '') + path;
       config.baseURL = undefined;
     } else {
-      config.baseURL = backendUrl;
+      config.baseURL = BACKEND_URL;
     }
   }
   
