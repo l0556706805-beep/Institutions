@@ -44,28 +44,40 @@ api.defaults.baseURL = correctApiUrl;
 api.interceptors.request.use((config) => {
   // Always override baseURL to ensure it's the backend URL
   const currentCorrectUrl = getApiUrl();
+  
+  // Force baseURL to be the correct backend URL
   config.baseURL = currentCorrectUrl;
   api.defaults.baseURL = currentCorrectUrl;
+  axios.defaults.baseURL = currentCorrectUrl;
   
-  // Also ensure the full URL is correct
+  // Handle absolute URLs that point to frontend domain
   if (config.url) {
-    // If URL is absolute and points to frontend domain, extract path and use correct baseURL
+    // If URL is absolute, check if it points to frontend domain
     if (config.url.startsWith('http://') || config.url.startsWith('https://')) {
       try {
         const urlObj = new URL(config.url);
-        // If URL points to frontend domain, extract path
+        // If URL points to frontend domain, extract path and use correct baseURL
         if (urlObj.hostname.includes('.pages.dev') || urlObj.hostname.includes('localhost')) {
-          config.url = urlObj.pathname + urlObj.search;
+          const path = urlObj.pathname + urlObj.search;
+          config.url = path;
           config.baseURL = currentCorrectUrl;
+          console.log("Fixed absolute URL - extracted path:", path, "using baseURL:", currentCorrectUrl);
         }
       } catch (e) {
-        // If URL parsing fails, just use the correct baseURL
+        console.error("Error parsing URL:", e);
         config.baseURL = currentCorrectUrl;
       }
     }
   }
   
-  console.log("Request config - baseURL:", config.baseURL, "url:", config.url);
+  // Final check - ensure baseURL is never the frontend domain
+  if (config.baseURL && (config.baseURL.includes('.pages.dev') || config.baseURL.includes('localhost'))) {
+    console.warn("baseURL was frontend domain, forcing backend URL");
+    config.baseURL = currentCorrectUrl;
+  }
+  
+  const fullUrl = config.baseURL ? (config.baseURL + (config.url || '')) : (config.url || '');
+  console.log("Request config - baseURL:", config.baseURL, "url:", config.url, "full URL:", fullUrl);
   return config;
 });
 
