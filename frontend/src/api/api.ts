@@ -45,77 +45,52 @@ api.interceptors.request.use((config) => {
   // Always override baseURL to ensure it's the backend URL
   const currentCorrectUrl = getApiUrl();
   
-  // Build the full URL directly to avoid any baseURL issues
-  let finalUrl: string;
-  
+  // ALWAYS build the full absolute URL directly
+  // This is the most reliable way to ensure the correct backend URL is used
   if (config.url) {
-    // If URL is absolute, check if it points to frontend domain
+    let path = config.url;
+    
+    // If URL is absolute, extract the path
     if (config.url.startsWith('http://') || config.url.startsWith('https://')) {
       try {
         const urlObj = new URL(config.url);
-        if (urlObj.hostname.includes('.pages.dev') || urlObj.hostname.includes('localhost')) {
-          // Extract path and build full URL with backend
-          const path = urlObj.pathname + urlObj.search;
-          finalUrl = currentCorrectUrl + path;
-          config.url = finalUrl;
-          config.baseURL = undefined; // Clear baseURL when using absolute URL
-          console.log("Fixed absolute URL - using full URL:", finalUrl);
-        } else {
-          // URL is absolute and correct, keep it as is
-          finalUrl = config.url;
-          config.baseURL = undefined; // Clear baseURL when using absolute URL
-        }
+        path = urlObj.pathname + urlObj.search;
       } catch (e) {
-        console.error("Error parsing URL:", e);
-        // Fallback: build full URL from relative path
-        finalUrl = currentCorrectUrl + config.url;
-        config.url = finalUrl;
-        config.baseURL = undefined;
+        // If parsing fails, try to extract path manually
+        const match = config.url.match(/https?:\/\/[^\/]+(\/.*)/);
+        if (match) {
+          path = match[1];
+        }
       }
-    } else {
-      // URL is relative, build full URL with backend
-      finalUrl = currentCorrectUrl + config.url;
-      config.url = finalUrl;
-      config.baseURL = undefined; // Clear baseURL when using absolute URL
     }
+    
+    // Ensure path starts with /
+    if (!path.startsWith('/')) {
+      path = '/' + path;
+    }
+    
+    // Build the full absolute URL
+    const fullUrl = currentCorrectUrl.replace(/\/$/, '') + path;
+    config.url = fullUrl;
+    config.baseURL = undefined; // Clear baseURL when using absolute URL
+    
+    console.log("Built full URL:", fullUrl);
   } else {
     // No URL, use baseURL
     config.baseURL = currentCorrectUrl;
-    finalUrl = currentCorrectUrl;
   }
   
-  // CRITICAL: Always set baseURL to undefined when using absolute URL
-  // This prevents axios from modifying the URL
-  if (config.url && (config.url.startsWith('http://') || config.url.startsWith('https://'))) {
-    config.baseURL = undefined;
-  } else {
-    config.baseURL = currentCorrectUrl;
-  }
-  
-  // Also update defaults
-  api.defaults.baseURL = currentCorrectUrl;
-  axios.defaults.baseURL = currentCorrectUrl;
-  
-  // Final validation - ensure URL is never invalid
-  const checkUrl = config.url || (config.baseURL ? (config.baseURL + (config.url || '')) : '');
-  if (checkUrl.includes('.pages.dev') || checkUrl.includes('localhost')) {
-    console.error("INVALID URL detected:", checkUrl, "forcing correct URL");
-    if (config.url && !config.url.startsWith('http')) {
-      // URL is relative, build full URL
-      config.url = currentCorrectUrl + config.url;
+  // Final check - ensure URL is correct
+  const finalUrl = config.url || (config.baseURL ? (config.baseURL + (config.url || '')) : '');
+  if (finalUrl.includes('.pages.dev') || finalUrl.includes('localhost')) {
+    console.error("ERROR: URL still contains frontend domain:", finalUrl);
+    // Force correct URL
+    if (config.url) {
+      const path = config.url.replace(/^https?:\/\/[^\/]+/, '') || config.url;
+      config.url = currentCorrectUrl.replace(/\/$/, '') + (path.startsWith('/') ? path : '/' + path);
       config.baseURL = undefined;
     } else {
-      // URL is absolute but wrong, extract path and rebuild
-      try {
-        const urlObj = new URL(checkUrl);
-        const path = urlObj.pathname + urlObj.search;
-        config.url = currentCorrectUrl + path;
-        config.baseURL = undefined;
-      } catch (e) {
-        // Fallback
-        config.url = currentCorrectUrl + (config.url || '');
-        config.baseURL = undefined;
-      }
+      config.baseURL = currentCorrectUrl;
     }
   }
   
