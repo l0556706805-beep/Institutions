@@ -46,7 +46,8 @@ api.interceptors.request.use((config) => {
   const BACKEND_BASE = "https://institutions-93gl.onrender.com/api";
   
   // Extract path from config.url (handle both relative and absolute URLs)
-  let path = config.url || '';
+  const originalUrl = config.url || '';
+  let path = originalUrl;
   
   if (path.startsWith('http://') || path.startsWith('https://')) {
     // If absolute URL, extract just the path
@@ -65,14 +66,20 @@ api.interceptors.request.use((config) => {
     path = '/' + path;
   }
   
-  // Build the complete absolute URL
+  // Build the complete absolute URL - CRITICAL: use string concatenation directly
   const fullUrl = BACKEND_BASE.replace(/\/$/, '') + path;
   
   // ALWAYS set the full URL directly - this is the only way to guarantee it works
   config.url = fullUrl;
   config.baseURL = undefined; // Must be undefined when using absolute URL
   
-  console.log("Interceptor - Original URL:", config.url, "Path:", path, "Full URL:", fullUrl);
+  // Debug logging
+  console.log("Interceptor Debug:");
+  console.log("  BACKEND_BASE:", BACKEND_BASE);
+  console.log("  originalUrl:", originalUrl);
+  console.log("  path:", path);
+  console.log("  fullUrl:", fullUrl);
+  console.log("  config.url after assignment:", config.url);
   
   return config;
 });
