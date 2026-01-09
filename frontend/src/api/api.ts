@@ -45,39 +45,61 @@ api.interceptors.request.use((config) => {
   // Always override baseURL to ensure it's the backend URL
   const currentCorrectUrl = getApiUrl();
   
-  // Force baseURL to be the correct backend URL
+  // If URL is relative, ensure baseURL is set correctly
+  if (config.url && !config.url.startsWith('http://') && !config.url.startsWith('https://')) {
+    // URL is relative, force baseURL to be the correct backend URL
+    config.baseURL = currentCorrectUrl;
+  } else if (config.url && (config.url.startsWith('http://') || config.url.startsWith('https://'))) {
+    // URL is absolute, check if it points to frontend domain
+    try {
+      const urlObj = new URL(config.url);
+      if (urlObj.hostname.includes('.pages.dev') || urlObj.hostname.includes('localhost')) {
+        // Extract path and use correct baseURL
+        const path = urlObj.pathname + urlObj.search;
+        config.url = path;
+        config.baseURL = currentCorrectUrl;
+        console.log("Fixed absolute URL - extracted path:", path, "using baseURL:", currentCorrectUrl);
+      } else {
+        // URL is absolute and correct, keep it as is
+        config.baseURL = undefined; // Clear baseURL when using absolute URL
+      }
+    } catch (e) {
+      console.error("Error parsing URL:", e);
+      config.baseURL = currentCorrectUrl;
+    }
+  } else {
+    // No URL or empty, ensure baseURL is set
+    config.baseURL = currentCorrectUrl;
+  }
+  
+  // CRITICAL: Always force baseURL to be the correct backend URL (override ANY previous value)
+  // This must be done last to ensure nothing can override it
   config.baseURL = currentCorrectUrl;
+  
+  // Also update defaults
   api.defaults.baseURL = currentCorrectUrl;
   axios.defaults.baseURL = currentCorrectUrl;
   
-  // Handle absolute URLs that point to frontend domain
-  if (config.url) {
-    // If URL is absolute, check if it points to frontend domain
-    if (config.url.startsWith('http://') || config.url.startsWith('https://')) {
-      try {
-        const urlObj = new URL(config.url);
-        // If URL points to frontend domain, extract path and use correct baseURL
-        if (urlObj.hostname.includes('.pages.dev') || urlObj.hostname.includes('localhost')) {
-          const path = urlObj.pathname + urlObj.search;
-          config.url = path;
-          config.baseURL = currentCorrectUrl;
-          console.log("Fixed absolute URL - extracted path:", path, "using baseURL:", currentCorrectUrl);
-        }
-      } catch (e) {
-        console.error("Error parsing URL:", e);
-        config.baseURL = currentCorrectUrl;
-      }
-    }
-  }
-  
-  // Final check - ensure baseURL is never the frontend domain
-  if (config.baseURL && (config.baseURL.includes('.pages.dev') || config.baseURL.includes('localhost'))) {
-    console.warn("baseURL was frontend domain, forcing backend URL");
+  // Final validation - ensure baseURL is never invalid
+  if (!config.baseURL || 
+      config.baseURL.includes('.pages.dev') || 
+      config.baseURL.includes('localhost') || 
+      config.baseURL.startsWith('/') ||
+      !config.baseURL.startsWith('http')) {
+    console.error("INVALID baseURL detected:", config.baseURL, "forcing backend URL:", currentCorrectUrl);
     config.baseURL = currentCorrectUrl;
   }
   
   const fullUrl = config.baseURL ? (config.baseURL + (config.url || '')) : (config.url || '');
   console.log("Request config - baseURL:", config.baseURL, "url:", config.url, "full URL:", fullUrl);
+  
+  // Final safety check - if fullUrl is still wrong, force it
+  if (fullUrl.includes('.pages.dev') || fullUrl.includes('localhost')) {
+    console.error("INVALID full URL detected:", fullUrl, "forcing correct URL");
+    config.url = config.url?.replace(/^https?:\/\/[^\/]+/, '') || config.url || '';
+    config.baseURL = currentCorrectUrl;
+  }
+  
   return config;
 });
 
