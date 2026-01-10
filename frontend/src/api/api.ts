@@ -43,32 +43,42 @@ axios.defaults.baseURL = BACKEND_BASE_URL;
 
 // Interceptor to ensure baseURL is always correct on every request
 api.interceptors.request.use((config) => {
-  // CRITICAL: Always force baseURL to be the backend URL
-  config.baseURL = BACKEND_BASE_URL;
-  api.defaults.baseURL = BACKEND_BASE_URL;
-  axios.defaults.baseURL = BACKEND_BASE_URL;
+  // CRITICAL: Build the full absolute URL directly
+  const BACKEND = "https://institutions-93gl.onrender.com/api";
   
-  // If URL is absolute and points to frontend domain, extract path
-  if (config.url && (config.url.startsWith('http://') || config.url.startsWith('https://'))) {
+  // Get the path from config.url
+  let path = config.url || '';
+  
+  // If URL is absolute, extract just the path
+  if (path.startsWith('http://') || path.startsWith('https://')) {
     try {
-      const urlObj = new URL(config.url);
-      if (urlObj.hostname.includes('.pages.dev') || urlObj.hostname.includes('localhost')) {
-        // Extract path and use baseURL
-        config.url = urlObj.pathname + urlObj.search;
-        config.baseURL = BACKEND_BASE_URL;
-      }
+      const urlObj = new URL(path);
+      path = urlObj.pathname + urlObj.search;
     } catch (e) {
-      // If parsing fails, ensure baseURL is set
-      config.baseURL = BACKEND_BASE_URL;
+      // Fallback: extract path manually
+      const match = path.match(/https?:\/\/[^\/]+(\/.*)/);
+      path = match ? match[1] : '/';
     }
   }
   
+  // Ensure path starts with /
+  if (!path.startsWith('/')) {
+    path = '/' + path;
+  }
+  
+  // Build the complete absolute URL
+  const fullUrl = BACKEND + path;
+  
+  // Set the full URL directly - this is the most reliable way
+  config.url = fullUrl;
+  config.baseURL = undefined; // Must be undefined when using absolute URL
+  
   // Debug logging
   console.log("Interceptor Debug:");
-  console.log("  BACKEND_BASE_URL:", BACKEND_BASE_URL);
+  console.log("  BACKEND:", BACKEND);
+  console.log("  path:", path);
+  console.log("  fullUrl:", fullUrl);
   console.log("  config.url:", config.url);
-  console.log("  config.baseURL:", config.baseURL);
-  console.log("  Full URL will be:", config.baseURL ? (config.baseURL + (config.url || '')) : config.url);
   
   return config;
 });
@@ -106,4 +116,5 @@ api.interceptors.response.use(
 console.log("API baseURL:", getApiUrl());
 
 export default api;
+
 
