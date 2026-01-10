@@ -31,52 +31,44 @@ const getApiUrl = () => {
   return BACKEND_API_URL;
 };
 
-// יצירת מופע API - Always use the hardcoded backend URL
-const correctApiUrl = getApiUrl();
+// יצירת מופע API - Always use the hardcoded backend URL directly
+const BACKEND_BASE_URL = "https://institutions-93gl.onrender.com/api";
 const api = axios.create({
-  baseURL: correctApiUrl,
+  baseURL: BACKEND_BASE_URL,
 });
 
 // Update defaults to ensure baseURL is always correct
-api.defaults.baseURL = correctApiUrl;
+api.defaults.baseURL = BACKEND_BASE_URL;
+axios.defaults.baseURL = BACKEND_BASE_URL;
 
 // Interceptor to ensure baseURL is always correct on every request
 api.interceptors.request.use((config) => {
-  // Extract path from config.url (handle both relative and absolute URLs)
-  const originalUrl = config.url || '';
-  let path = originalUrl;
+  // CRITICAL: Always force baseURL to be the backend URL
+  config.baseURL = BACKEND_BASE_URL;
+  api.defaults.baseURL = BACKEND_BASE_URL;
+  axios.defaults.baseURL = BACKEND_BASE_URL;
   
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    // If absolute URL, extract just the path
+  // If URL is absolute and points to frontend domain, extract path
+  if (config.url && (config.url.startsWith('http://') || config.url.startsWith('https://'))) {
     try {
-      const urlObj = new URL(path);
-      path = urlObj.pathname + urlObj.search;
+      const urlObj = new URL(config.url);
+      if (urlObj.hostname.includes('.pages.dev') || urlObj.hostname.includes('localhost')) {
+        // Extract path and use baseURL
+        config.url = urlObj.pathname + urlObj.search;
+        config.baseURL = BACKEND_BASE_URL;
+      }
     } catch (e) {
-      // Fallback: extract path manually
-      const match = path.match(/https?:\/\/[^\/]+(\/.*)/);
-      path = match ? match[1] : '/';
+      // If parsing fails, ensure baseURL is set
+      config.baseURL = BACKEND_BASE_URL;
     }
   }
   
-  // Ensure path starts with /
-  if (!path.startsWith('/')) {
-    path = '/' + path;
-  }
-  
-  // CRITICAL: Build the complete absolute URL using string literal directly
-  // This ensures the URL is always correct regardless of any variable issues
-  const fullUrl = "https://institutions-93gl.onrender.com/api" + path;
-  
-  // ALWAYS set the full URL directly - this is the only way to guarantee it works
-  config.url = fullUrl;
-  config.baseURL = undefined; // Must be undefined when using absolute URL
-  
   // Debug logging
   console.log("Interceptor Debug:");
-  console.log("  originalUrl:", originalUrl);
-  console.log("  path:", path);
-  console.log("  fullUrl:", fullUrl);
-  console.log("  config.url after assignment:", config.url);
+  console.log("  BACKEND_BASE_URL:", BACKEND_BASE_URL);
+  console.log("  config.url:", config.url);
+  console.log("  config.baseURL:", config.baseURL);
+  console.log("  Full URL will be:", config.baseURL ? (config.baseURL + (config.url || '')) : config.url);
   
   return config;
 });
@@ -114,3 +106,4 @@ api.interceptors.response.use(
 console.log("API baseURL:", getApiUrl());
 
 export default api;
+
