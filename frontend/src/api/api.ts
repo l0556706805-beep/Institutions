@@ -38,21 +38,33 @@ axiosInstance.interceptors.request.use(
       config.url = config.url.trim();
     }
     
+    // Log BEFORE any modifications
+    const originalUrl = config.url;
+    const isAbsolute = config.url?.startsWith('http://') || config.url?.startsWith('https://');
+    
     console.log("🔵 Axios request interceptor:", {
       url: config.url,
       baseURL: config.baseURL,
       method: config.method,
-      fullUrl: config.url?.startsWith('http') ? config.url : (config.baseURL || '') + (config.url || '')
+      isAbsolute: isAbsolute,
+      fullUrl: isAbsolute ? config.url : (config.baseURL || '') + (config.url || '')
     });
     
     // Ensure URL is absolute - only fix if it's truly relative
-    if (config.url && !config.url.startsWith('http://') && !config.url.startsWith('https://')) {
+    // This should NOT happen if getApiUrl is working correctly
+    if (config.url && !isAbsolute) {
       console.error("❌ ERROR: Relative URL detected in interceptor:", config.url);
+      console.error("❌ This should not happen - getApiUrl should return absolute URLs");
       // Force absolute URL using hardcoded string literal directly
       const backendUrl = "https://institutions-93gl.onrender.com/api";
       const cleanUrl = config.url.trim();
       config.url = backendUrl + (cleanUrl.startsWith('/') ? cleanUrl : '/' + cleanUrl);
       console.log("🔵 Fixed URL to:", config.url);
+    }
+    
+    // Final verification - ensure URL is valid
+    if (config.url && !config.url.startsWith('https://') && !config.url.startsWith('http://')) {
+      console.error("❌ CRITICAL: URL is still not absolute after interceptor:", config.url);
     }
     
     return config;
@@ -77,7 +89,7 @@ axiosInstance.interceptors.response.use(
 // Helper to build URL - use hardcoded string directly, NO variables at all
 const getApiUrl = (path: string): string => {
   // Trim and clean the path to remove any whitespace
-  const cleanPath = path.trim();
+  const cleanPath = (path || '').trim();
   
   // Log input
   console.log("🔵 getApiUrl called with path:", cleanPath);
@@ -88,23 +100,31 @@ const getApiUrl = (path: string): string => {
     return cleanPath.trim();
   }
   
-  // Normalize path - ensure it starts with /
-  const normalized = cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath;
+  // Normalize path - ensure it starts with / and convert to lowercase for consistency
+  const normalizedPath = cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath;
+  const normalized = normalizedPath.toLowerCase();
   
   // Hardcoded string literal directly - NO variable references to prevent minification issues
-  // Ensure no extra spaces by trimming and using direct concatenation
+  // Build URL with explicit concatenation to avoid any whitespace issues
   const baseUrl = "https://institutions-93gl.onrender.com/api";
   const fullUrl = baseUrl + normalized;
+  
+  // Verify the URL is correct
+  const trimmedUrl = fullUrl.trim();
+  if (!trimmedUrl.startsWith('https://')) {
+    console.error("❌ CRITICAL: getApiUrl did not produce a valid HTTPS URL:", trimmedUrl);
+  }
   
   // Log output
   console.log("🔵 getApiUrl result:", { 
     path: cleanPath, 
     normalized, 
-    fullUrl,
-    "fullUrl startsWith https": fullUrl.startsWith('https://')
+    fullUrl: trimmedUrl,
+    "fullUrl startsWith https": trimmedUrl.startsWith('https://'),
+    "fullUrl length": trimmedUrl.length
   });
   
-  return fullUrl;
+  return trimmedUrl;
 };
 
 // Wrapper API object that handles all routes and ensures they go to backend
@@ -117,13 +137,24 @@ const api = {
   
   post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
     const fullUrl = getApiUrl(url);
-    console.log("🔵 API POST wrapper:", { originalUrl: url, fullUrl, type: typeof fullUrl });
     
-    // Ensure the URL is clean and properly formatted
-    const cleanUrl = fullUrl.trim();
+    // Ensure the URL is clean and properly formatted - double check
+    const cleanUrl = (fullUrl || '').trim();
+    
+    // Verify URL before sending
+    if (!cleanUrl.startsWith('https://')) {
+      console.error("❌ CRITICAL ERROR: POST URL is not valid HTTPS URL:", cleanUrl);
+      throw new Error(`Invalid URL constructed: ${cleanUrl}`);
+    }
+    
+    console.log("🔵 API POST wrapper:", { 
+      originalUrl: url, 
+      fullUrl: cleanUrl, 
+      type: typeof cleanUrl,
+      "startsWith https": cleanUrl.startsWith('https://')
+    });
     
     // Use the full URL directly as first parameter - axios.post(url, data, config)
-    // Pass empty string as url to axios and set baseURL, or use the full URL directly
     return axiosInstance.post<T>(cleanUrl, data, config);
   },
   
