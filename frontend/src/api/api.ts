@@ -43,9 +43,9 @@ axios.defaults.baseURL = BACKEND_BASE_URL;
 
 // Interceptor to ensure baseURL is always correct on every request
 api.interceptors.request.use((config) => {
-  // CRITICAL: Build the full absolute URL directly using string literal
-  // Use template literal to ensure the URL is built correctly
-  const BACKEND_BASE = "https://institutions-93gl.onrender.com/api";
+  // CRITICAL: Use hardcoded string directly - no variables that can be corrupted
+  // Build the full absolute URL using string concatenation
+  const BACKEND = "https://institutions-93gl.onrender.com/api";
   
   // Get the path from config.url
   let path = config.url || '';
@@ -67,8 +67,20 @@ api.interceptors.request.use((config) => {
     path = '/' + path;
   }
   
-  // Build the complete absolute URL using template literal
-  const fullUrl = `${BACKEND_BASE}${path}`;
+  // CRITICAL: Build the complete absolute URL using string concatenation
+  // Don't use template literals - use direct concatenation to avoid any issues
+  const fullUrl = BACKEND + path;
+  
+  // Verify the URL was built correctly
+  if (!fullUrl.startsWith('https://institutions-93gl.onrender.com')) {
+    console.error("ERROR: URL was not built correctly! fullUrl:", fullUrl);
+    // Force correct URL
+    const correctedUrl = "https://institutions-93gl.onrender.com/api" + path;
+    config.url = correctedUrl;
+    config.baseURL = undefined;
+    console.log("Corrected URL:", correctedUrl);
+    return config;
+  }
   
   // CRITICAL: Override config.url with the full URL
   // Delete any existing baseURL to prevent axios from modifying the URL
@@ -76,20 +88,27 @@ api.interceptors.request.use((config) => {
   config.url = fullUrl;
   
   // Force the URL to be the correct one - prevent any modifications
-  Object.defineProperty(config, 'url', {
-    value: fullUrl,
-    writable: false,
-    configurable: false,
-    enumerable: true
-  });
+  try {
+    Object.defineProperty(config, 'url', {
+      value: fullUrl,
+      writable: false,
+      configurable: false,
+      enumerable: true
+    });
+  } catch (e) {
+    // If defineProperty fails, just set it normally
+    config.url = fullUrl;
+    console.warn("Could not freeze config.url:", e);
+  }
   
   // Debug logging
   console.log("Interceptor Debug:");
-  console.log("  BACKEND_BASE:", BACKEND_BASE);
+  console.log("  BACKEND:", BACKEND);
   console.log("  path:", path);
   console.log("  fullUrl:", fullUrl);
   console.log("  config.url:", config.url);
   console.log("  typeof config.url:", typeof config.url);
+  console.log("  fullUrl starts with https://institutions-93gl:", fullUrl.startsWith('https://institutions-93gl'));
   
   return config;
 });
