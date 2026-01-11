@@ -43,10 +43,6 @@ axios.defaults.baseURL = BACKEND_BASE_URL;
 
 // Interceptor to ensure baseURL is always correct on every request
 api.interceptors.request.use((config) => {
-  // CRITICAL: Use hardcoded string directly - no variables that can be corrupted
-  // Build the full absolute URL using string concatenation
-  const BACKEND = "https://institutions-93gl.onrender.com/api";
-  
   // Get the path from config.url
   let path = config.url || '';
   
@@ -67,20 +63,9 @@ api.interceptors.request.use((config) => {
     path = '/' + path;
   }
   
-  // CRITICAL: Build the complete absolute URL using string concatenation
-  // Don't use template literals - use direct concatenation to avoid any issues
-  const fullUrl = BACKEND + path;
-  
-  // Verify the URL was built correctly
-  if (!fullUrl.startsWith('https://institutions-93gl.onrender.com')) {
-    console.error("ERROR: URL was not built correctly! fullUrl:", fullUrl);
-    // Force correct URL
-    const correctedUrl = "https://institutions-93gl.onrender.com/api" + path;
-    config.url = correctedUrl;
-    config.baseURL = undefined;
-    console.log("Corrected URL:", correctedUrl);
-    return config;
-  }
+  // CRITICAL: Build the complete absolute URL using hardcoded string directly
+  // Use string concatenation with hardcoded values - no variables
+  const fullUrl = "https://institutions-93gl.onrender.com/api" + path;
   
   // CRITICAL: Override config.url with the full URL
   // Delete any existing baseURL to prevent axios from modifying the URL
@@ -103,7 +88,6 @@ api.interceptors.request.use((config) => {
   
   // Debug logging
   console.log("Interceptor Debug:");
-  console.log("  BACKEND:", BACKEND);
   console.log("  path:", path);
   console.log("  fullUrl:", fullUrl);
   console.log("  config.url:", config.url);
