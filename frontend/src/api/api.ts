@@ -43,9 +43,10 @@ axiosInstance.interceptors.request.use(
     // Ensure URL is absolute
     if (config.url && !config.url.startsWith('http://') && !config.url.startsWith('https://')) {
       console.error("❌ ERROR: Relative URL detected in interceptor:", config.url);
-      // Force absolute URL using global BACKEND_API_URL
-      config.url = BACKEND_API_URL + (config.url.startsWith('/') ? config.url : '/' + config.url);
-      console.log("🔵 Fixed URL to:", config.url, "using BACKEND_API_URL:", BACKEND_API_URL);
+      // Force absolute URL using hardcoded string literal directly
+      const backendUrl = "https://institutions-93gl.onrender.com/api";
+      config.url = backendUrl + (config.url.startsWith('/') ? config.url : '/' + config.url);
+      console.log("🔵 Fixed URL to:", config.url, "backendUrl:", backendUrl);
     }
     
     return config;
@@ -67,7 +68,7 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Helper to build URL - use global BACKEND_API_URL directly, no local variables
+// Helper to build URL - use hardcoded string directly, NO variables at all
 const getApiUrl = (path: string): string => {
   // Log input
   console.log("🔵 getApiUrl called with path:", path);
@@ -80,17 +81,15 @@ const getApiUrl = (path: string): string => {
   
   const normalized = path.startsWith('/') ? path : '/' + path;
   
-  // Use global BACKEND_API_URL directly - no local variable to prevent minification issues
-  const fullUrl = BACKEND_API_URL + normalized;
+  // Hardcoded string literal directly - NO variable references to prevent minification issues
+  const fullUrl = "https://institutions-93gl.onrender.com/api" + normalized;
   
-  // Log output with direct string check
+  // Log output
   console.log("🔵 getApiUrl result:", { 
     path, 
     normalized, 
-    "BACKEND_API_URL": BACKEND_API_URL,
-    "BACKEND_API_URL type": typeof BACKEND_API_URL,
-    "BACKEND_API_URL length": BACKEND_API_URL.length,
-    fullUrl 
+    fullUrl,
+    "fullUrl startsWith https": fullUrl.startsWith('https://')
   });
   
   return fullUrl;
@@ -134,7 +133,7 @@ const api = {
   defaults: axiosInstance.defaults,
 };
 
-console.log("API initialized with backend URL:", BACKEND_API_URL);
+console.log("API initialized with backend URL: https://institutions-93gl.onrender.com/api");
 
 export default api;
 
