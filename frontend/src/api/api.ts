@@ -5,10 +5,22 @@ const BACKEND_API_URL = "https://institutions-93gl.onrender.com/api";
 
 // Helper function to build full URL from relative path
 const buildFullUrl = (path: string): string => {
+  // If already a full URL, return as-is (shouldn't happen, but just in case)
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    console.warn("buildFullUrl received full URL:", path);
+    return path;
+  }
+  
   // Ensure path starts with /
   const normalizedPath = path.startsWith('/') ? path : '/' + path;
+  
   // Build full URL using hardcoded backend URL
-  return BACKEND_API_URL + normalizedPath;
+  const fullUrl = BACKEND_API_URL + normalizedPath;
+  
+  // Debug log
+  console.log("buildFullUrl:", { path, normalizedPath, BACKEND_API_URL, fullUrl });
+  
+  return fullUrl;
 };
 
 // Create a clean axios instance without baseURL to avoid any conflicts
