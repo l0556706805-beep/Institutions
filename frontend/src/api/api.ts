@@ -43,10 +43,9 @@ axiosInstance.interceptors.request.use(
     // Ensure URL is absolute
     if (config.url && !config.url.startsWith('http://') && !config.url.startsWith('https://')) {
       console.error("❌ ERROR: Relative URL detected in interceptor:", config.url);
-      // Force absolute URL
-      const backendBase = "https://institutions-93gl.onrender.com/api";
-      config.url = backendBase + (config.url.startsWith('/') ? config.url : '/' + config.url);
-      console.log("🔵 Fixed URL to:", config.url);
+      // Force absolute URL using global BACKEND_API_URL
+      config.url = BACKEND_API_URL + (config.url.startsWith('/') ? config.url : '/' + config.url);
+      console.log("🔵 Fixed URL to:", config.url, "using BACKEND_API_URL:", BACKEND_API_URL);
     }
     
     return config;
@@ -68,7 +67,7 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Helper to build URL - inline to prevent any variable issues
+// Helper to build URL - use global BACKEND_API_URL directly, no local variables
 const getApiUrl = (path: string): string => {
   // Log input
   console.log("🔵 getApiUrl called with path:", path);
@@ -81,12 +80,18 @@ const getApiUrl = (path: string): string => {
   
   const normalized = path.startsWith('/') ? path : '/' + path;
   
-  // Direct string concatenation - hardcoded backend URL
-  const backendBase = "https://institutions-93gl.onrender.com/api";
-  const fullUrl = backendBase + normalized;
+  // Use global BACKEND_API_URL directly - no local variable to prevent minification issues
+  const fullUrl = BACKEND_API_URL + normalized;
   
-  // Log output
-  console.log("🔵 getApiUrl result:", { path, normalized, backendBase, fullUrl });
+  // Log output with direct string check
+  console.log("🔵 getApiUrl result:", { 
+    path, 
+    normalized, 
+    "BACKEND_API_URL": BACKEND_API_URL,
+    "BACKEND_API_URL type": typeof BACKEND_API_URL,
+    "BACKEND_API_URL length": BACKEND_API_URL.length,
+    fullUrl 
+  });
   
   return fullUrl;
 };
