@@ -1,14 +1,20 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 
-// Backend API URL - use baseURL approach which is the standard way
-const BACKEND_API_URL = "https://institutions-93gl.onrender.com/api";
+// Get API URL from external config layer (window.APP_CONFIG) or use relative path
+const getApiBaseUrl = (): string => {
+  // In production, use the external config if available
+  if (typeof window !== 'undefined' && (window as any).APP_CONFIG?.API_URL) {
+    return (window as any).APP_CONFIG.API_URL;
+  }
+  
+  // In development or if config not available, use relative path
+  // This will work with proxy in development
+  return '/api';
+};
 
-// Log immediately to verify this code is loaded
-console.log("🔵 api.ts loaded - BACKEND_API_URL:", BACKEND_API_URL);
-
-// Create axios instance WITH baseURL - this is the standard and correct approach
+// Create axios instance - use relative paths, proxy will handle routing
 const axiosInstance = axios.create({
-  baseURL: BACKEND_API_URL,
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -36,17 +42,16 @@ if (storedToken) {
   setAuthToken(storedToken);
 }
 
-// 🔍 Request interceptor - simplified, just for logging
+// 🔍 Request interceptor - simple logging
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Log the request details
     const finalUrl = config.baseURL 
       ? `${config.baseURL}${config.url?.startsWith('/') ? config.url : '/' + (config.url || '')}`
       : config.url;
     
-    console.log("🔵 Axios request:", {
+    console.log("🔵 API Request:", {
       method: config.method?.toUpperCase(),
-      url: config.url,
+      path: config.url,
       baseURL: config.baseURL,
       finalUrl: finalUrl,
     });
@@ -70,13 +75,13 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Simple helper to normalize paths - just ensure they start with /
+// Helper to normalize paths - ensure they start with /
 const normalizePath = (path: string): string => {
   const clean = (path || '').trim();
   return clean.startsWith('/') ? clean : '/' + clean;
 };
 
-// Wrapper API object - simple and clean, using baseURL
+// Wrapper API object - all paths are relative, handled by proxy/config
 const api = {
   get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
     return axiosInstance.get<T>(normalizePath(url), config);
@@ -102,6 +107,9 @@ const api = {
   defaults: axiosInstance.defaults,
 };
 
-console.log("✅ API initialized with baseURL:", BACKEND_API_URL);
+// Log initialization
+const apiBaseUrl = getApiBaseUrl();
+console.log("✅ API initialized with baseURL:", apiBaseUrl);
+console.log("📋 Using external config:", typeof window !== 'undefined' && !!(window as any).APP_CONFIG);
 
 export default api;
