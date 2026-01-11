@@ -33,8 +33,12 @@ const getApiBaseUrl = (): string => {
   return '/api';
 };
 
-// Create axios instance - baseURL will be set dynamically
+// Get initial base URL
+const initialBaseUrl = typeof window !== 'undefined' ? getApiBaseUrl().trim() : '/api';
+
+// Create axios instance - set baseURL immediately
 const axiosInstance = axios.create({
+  baseURL: initialBaseUrl,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -62,16 +66,14 @@ if (storedToken) {
   setAuthToken(storedToken);
 }
 
-// 🔍 Request interceptor - set baseURL dynamically on every request
+// 🔍 Request interceptor - FORCE baseURL on every request
 axiosInstance.interceptors.request.use(
   (config) => {
     // Get base URL dynamically (checks config.js on every request)
-    const baseUrl = getApiBaseUrl().trim();
+    const correctBaseUrl = getApiBaseUrl().trim();
     
-    // Set baseURL if not already set or if it's different
-    if (!config.baseURL || config.baseURL !== baseUrl) {
-      config.baseURL = baseUrl;
-    }
+    // ALWAYS set baseURL - force it, don't trust defaults
+    config.baseURL = correctBaseUrl;
     
     // Clean URLs
     if (config.baseURL) {
@@ -88,10 +90,18 @@ axiosInstance.interceptors.request.use(
       ? `${base}${path.startsWith('/') ? path : '/' + path}`
       : `${base}${path.startsWith('/') ? path : '/' + path}`;
     
+    // Verify baseURL is correct (not frontend domain)
+    const currentHostname = typeof window !== 'undefined' ? window.location.origin : '';
+    if (config.baseURL && config.baseURL.includes(currentHostname) && currentHostname !== '') {
+      console.error("❌ CRITICAL: baseURL is frontend domain! Forcing correct URL...");
+      config.baseURL = correctBaseUrl;
+    }
+    
     console.log("🔵 API Request:", {
       method: config.method?.toUpperCase(),
       path: config.url,
       baseURL: config.baseURL,
+      baseURLFromFunction: correctBaseUrl,
       finalUrl: finalUrl,
       hostname: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
     });
@@ -148,7 +158,6 @@ const api = {
 };
 
 // Log initialization
-const initialBaseUrl = getApiBaseUrl();
 console.log("✅ API initialized");
 console.log("📋 Initial baseURL:", initialBaseUrl);
 console.log("📋 Hostname:", typeof window !== 'undefined' ? window.location.hostname : 'unknown');
