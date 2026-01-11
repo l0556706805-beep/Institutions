@@ -43,8 +43,9 @@ axios.defaults.baseURL = BACKEND_BASE_URL;
 
 // Interceptor to ensure baseURL is always correct on every request
 api.interceptors.request.use((config) => {
-  // CRITICAL: Build the full absolute URL directly
-  const BACKEND = "https://institutions-93gl.onrender.com/api";
+  // CRITICAL: Build the full absolute URL directly using string literal
+  // Use template literal to ensure the URL is built correctly
+  const BACKEND_BASE = "https://institutions-93gl.onrender.com/api";
   
   // Get the path from config.url
   let path = config.url || '';
@@ -66,19 +67,29 @@ api.interceptors.request.use((config) => {
     path = '/' + path;
   }
   
-  // Build the complete absolute URL
-  const fullUrl = BACKEND + path;
+  // Build the complete absolute URL using template literal
+  const fullUrl = `${BACKEND_BASE}${path}`;
   
-  // Set the full URL directly - this is the most reliable way
+  // CRITICAL: Override config.url with the full URL
+  // Delete any existing baseURL to prevent axios from modifying the URL
+  delete config.baseURL;
   config.url = fullUrl;
-  config.baseURL = undefined; // Must be undefined when using absolute URL
+  
+  // Force the URL to be the correct one - prevent any modifications
+  Object.defineProperty(config, 'url', {
+    value: fullUrl,
+    writable: false,
+    configurable: false,
+    enumerable: true
+  });
   
   // Debug logging
   console.log("Interceptor Debug:");
-  console.log("  BACKEND:", BACKEND);
+  console.log("  BACKEND_BASE:", BACKEND_BASE);
   console.log("  path:", path);
   console.log("  fullUrl:", fullUrl);
   console.log("  config.url:", config.url);
+  console.log("  typeof config.url:", typeof config.url);
   
   return config;
 });
