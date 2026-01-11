@@ -6,33 +6,6 @@ const BACKEND_API_URL = "https://institutions-93gl.onrender.com/api";
 // Log immediately to verify this code is loaded
 console.log("🔵 api.ts loaded - BACKEND_API_URL:", BACKEND_API_URL);
 
-// Helper function to build full URL from relative path
-const buildFullUrl = (path: string): string => {
-  // If already a full URL, return as-is (shouldn't happen, but just in case)
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    console.warn("buildFullUrl received full URL:", path);
-    return path;
-  }
-  
-  // Ensure path starts with /
-  const normalizedPath = path.startsWith('/') ? path : '/' + path;
-  
-  // Build full URL using hardcoded backend URL - use literal string to prevent any issues
-  const backendUrl = "https://institutions-93gl.onrender.com/api";
-  const fullUrl = backendUrl + normalizedPath;
-  
-  // Debug log
-  console.log("buildFullUrl:", { 
-    path, 
-    normalizedPath, 
-    BACKEND_API_URL, 
-    backendUrl,
-    fullUrl 
-  });
-  
-  return fullUrl;
-};
-
 // Create a clean axios instance without baseURL to avoid any conflicts
 const axiosInstance = axios.create();
 
@@ -69,34 +42,41 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// Helper to build URL - inline to prevent any variable issues
+const getApiUrl = (path: string): string => {
+  const normalized = path.startsWith('/') ? path : '/' + path;
+  // Direct string concatenation - no variables
+  return "https://institutions-93gl.onrender.com/api" + normalized;
+};
+
 // Wrapper API object that handles all routes and ensures they go to backend
 const api = {
   get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const fullUrl = buildFullUrl(url);
+    const fullUrl = getApiUrl(url);
     console.log("API GET:", url, "->", fullUrl);
     return axiosInstance.get<T>(fullUrl, config);
   },
   
   post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const fullUrl = buildFullUrl(url);
+    const fullUrl = getApiUrl(url);
     console.log("API POST:", url, "->", fullUrl);
     return axiosInstance.post<T>(fullUrl, data, config);
   },
   
   put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const fullUrl = buildFullUrl(url);
+    const fullUrl = getApiUrl(url);
     console.log("API PUT:", url, "->", fullUrl);
     return axiosInstance.put<T>(fullUrl, data, config);
   },
   
   delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const fullUrl = buildFullUrl(url);
+    const fullUrl = getApiUrl(url);
     console.log("API DELETE:", url, "->", fullUrl);
     return axiosInstance.delete<T>(fullUrl, config);
   },
   
   patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const fullUrl = buildFullUrl(url);
+    const fullUrl = getApiUrl(url);
     console.log("API PATCH:", url, "->", fullUrl);
     return axiosInstance.patch<T>(fullUrl, data, config);
   },
