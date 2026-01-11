@@ -33,6 +33,11 @@ if (storedToken) {
 // 🔍 Request interceptor to log and ensure correct URL
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Trim and clean the URL to remove any whitespace issues
+    if (config.url) {
+      config.url = config.url.trim();
+    }
+    
     console.log("🔵 Axios request interceptor:", {
       url: config.url,
       baseURL: config.baseURL,
@@ -40,13 +45,14 @@ axiosInstance.interceptors.request.use(
       fullUrl: config.url?.startsWith('http') ? config.url : (config.baseURL || '') + (config.url || '')
     });
     
-    // Ensure URL is absolute
+    // Ensure URL is absolute - only fix if it's truly relative
     if (config.url && !config.url.startsWith('http://') && !config.url.startsWith('https://')) {
       console.error("❌ ERROR: Relative URL detected in interceptor:", config.url);
       // Force absolute URL using hardcoded string literal directly
       const backendUrl = "https://institutions-93gl.onrender.com/api";
-      config.url = backendUrl + (config.url.startsWith('/') ? config.url : '/' + config.url);
-      console.log("🔵 Fixed URL to:", config.url, "backendUrl:", backendUrl);
+      const cleanUrl = config.url.trim();
+      config.url = backendUrl + (cleanUrl.startsWith('/') ? cleanUrl : '/' + cleanUrl);
+      console.log("🔵 Fixed URL to:", config.url);
     }
     
     return config;
@@ -70,23 +76,29 @@ axiosInstance.interceptors.response.use(
 
 // Helper to build URL - use hardcoded string directly, NO variables at all
 const getApiUrl = (path: string): string => {
+  // Trim and clean the path to remove any whitespace
+  const cleanPath = path.trim();
+  
   // Log input
-  console.log("🔵 getApiUrl called with path:", path);
+  console.log("🔵 getApiUrl called with path:", cleanPath);
   
   // If already full URL, return as-is (shouldn't happen, but safety check)
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    console.warn("⚠️ getApiUrl received full URL:", path);
-    return path;
+  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+    console.warn("⚠️ getApiUrl received full URL:", cleanPath);
+    return cleanPath.trim();
   }
   
-  const normalized = path.startsWith('/') ? path : '/' + path;
+  // Normalize path - ensure it starts with /
+  const normalized = cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath;
   
   // Hardcoded string literal directly - NO variable references to prevent minification issues
-  const fullUrl = "https://institutions-93gl.onrender.com/api" + normalized;
+  // Ensure no extra spaces by trimming and using direct concatenation
+  const baseUrl = "https://institutions-93gl.onrender.com/api";
+  const fullUrl = baseUrl + normalized;
   
   // Log output
   console.log("🔵 getApiUrl result:", { 
-    path, 
+    path: cleanPath, 
     normalized, 
     fullUrl,
     "fullUrl startsWith https": fullUrl.startsWith('https://')
@@ -107,8 +119,12 @@ const api = {
     const fullUrl = getApiUrl(url);
     console.log("🔵 API POST wrapper:", { originalUrl: url, fullUrl, type: typeof fullUrl });
     
+    // Ensure the URL is clean and properly formatted
+    const cleanUrl = fullUrl.trim();
+    
     // Use the full URL directly as first parameter - axios.post(url, data, config)
-    return axiosInstance.post<T>(fullUrl, data, config);
+    // Pass empty string as url to axios and set baseURL, or use the full URL directly
+    return axiosInstance.post<T>(cleanUrl, data, config);
   },
   
   put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
