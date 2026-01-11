@@ -30,6 +30,32 @@ if (storedToken) {
   setAuthToken(storedToken);
 }
 
+// 🔍 Request interceptor to log and ensure correct URL
+axiosInstance.interceptors.request.use(
+  (config) => {
+    console.log("🔵 Axios request interceptor:", {
+      url: config.url,
+      baseURL: config.baseURL,
+      method: config.method,
+      fullUrl: config.url?.startsWith('http') ? config.url : (config.baseURL || '') + (config.url || '')
+    });
+    
+    // Ensure URL is absolute
+    if (config.url && !config.url.startsWith('http://') && !config.url.startsWith('https://')) {
+      console.error("❌ ERROR: Relative URL detected in interceptor:", config.url);
+      // Force absolute URL
+      const backendBase = "https://institutions-93gl.onrender.com/api";
+      config.url = backendBase + (config.url.startsWith('/') ? config.url : '/' + config.url);
+      console.log("🔵 Fixed URL to:", config.url);
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // ⛔ טיפול אוטומטי בשגיאת 401 — טוקן לא תקף / פג
 axiosInstance.interceptors.response.use(
   (response) => response,
@@ -44,9 +70,25 @@ axiosInstance.interceptors.response.use(
 
 // Helper to build URL - inline to prevent any variable issues
 const getApiUrl = (path: string): string => {
+  // Log input
+  console.log("🔵 getApiUrl called with path:", path);
+  
+  // If already full URL, return as-is (shouldn't happen, but safety check)
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    console.warn("⚠️ getApiUrl received full URL:", path);
+    return path;
+  }
+  
   const normalized = path.startsWith('/') ? path : '/' + path;
-  // Direct string concatenation - no variables
-  return "https://institutions-93gl.onrender.com/api" + normalized;
+  
+  // Direct string concatenation - hardcoded backend URL
+  const backendBase = "https://institutions-93gl.onrender.com/api";
+  const fullUrl = backendBase + normalized;
+  
+  // Log output
+  console.log("🔵 getApiUrl result:", { path, normalized, backendBase, fullUrl });
+  
+  return fullUrl;
 };
 
 // Wrapper API object that handles all routes and ensures they go to backend
@@ -59,7 +101,9 @@ const api = {
   
   post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
     const fullUrl = getApiUrl(url);
-    console.log("API POST:", url, "->", fullUrl);
+    console.log("🔵 API POST wrapper:", { originalUrl: url, fullUrl, type: typeof fullUrl });
+    
+    // Use the full URL directly as first parameter - axios.post(url, data, config)
     return axiosInstance.post<T>(fullUrl, data, config);
   },
   
