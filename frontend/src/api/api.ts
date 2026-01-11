@@ -1,7 +1,10 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 
-// Backend API URL - hardcoded to prevent any issues
+// Backend API URL - hardcoded directly in function to prevent any build/minification issues
 const BACKEND_API_URL = "https://institutions-93gl.onrender.com/api";
+
+// Log immediately to verify this code is loaded
+console.log("🔵 api.ts loaded - BACKEND_API_URL:", BACKEND_API_URL);
 
 // Helper function to build full URL from relative path
 const buildFullUrl = (path: string): string => {
@@ -14,11 +17,18 @@ const buildFullUrl = (path: string): string => {
   // Ensure path starts with /
   const normalizedPath = path.startsWith('/') ? path : '/' + path;
   
-  // Build full URL using hardcoded backend URL
-  const fullUrl = BACKEND_API_URL + normalizedPath;
+  // Build full URL using hardcoded backend URL - use literal string to prevent any issues
+  const backendUrl = "https://institutions-93gl.onrender.com/api";
+  const fullUrl = backendUrl + normalizedPath;
   
   // Debug log
-  console.log("buildFullUrl:", { path, normalizedPath, BACKEND_API_URL, fullUrl });
+  console.log("buildFullUrl:", { 
+    path, 
+    normalizedPath, 
+    BACKEND_API_URL, 
+    backendUrl,
+    fullUrl 
+  });
   
   return fullUrl;
 };
