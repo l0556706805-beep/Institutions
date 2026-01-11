@@ -1,20 +1,35 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 
-// Get API URL from external config layer (window.APP_CONFIG) or use relative path
+// Determine if we're in production (has external config) or development
+const isProduction = typeof window !== 'undefined' && 
+  (window as any).APP_CONFIG?.API_URL && 
+  String((window as any).APP_CONFIG.API_URL).trim().startsWith('http');
+
+// Get API base URL - use external config in production, relative path in development
 const getApiBaseUrl = (): string => {
-  // In production, use the external config if available
-  if (typeof window !== 'undefined' && (window as any).APP_CONFIG?.API_URL) {
-    return (window as any).APP_CONFIG.API_URL;
+  if (isProduction) {
+    const configUrl = String((window as any).APP_CONFIG.API_URL).trim();
+    if (configUrl && configUrl.startsWith('http')) {
+      return configUrl;
+    }
   }
   
-  // In development or if config not available, use relative path
-  // This will work with proxy in development
+  // Always use relative path in development - proxy will handle it
   return '/api';
 };
 
-// Create axios instance - use relative paths, proxy will handle routing
+// Get and clean the base URL - ensure no whitespace
+const apiBaseUrl = getApiBaseUrl().trim() || '/api';
+
+console.log("🔵 Initializing API...");
+console.log("🔵 isProduction:", isProduction);
+console.log("🔵 apiBaseUrl:", `"${apiBaseUrl}"`);
+console.log("🔵 apiBaseUrl length:", apiBaseUrl.length);
+console.log("🔵 apiBaseUrl type:", typeof apiBaseUrl);
+
+// Create axios instance
 const axiosInstance = axios.create({
-  baseURL: getApiBaseUrl(),
+  baseURL: apiBaseUrl,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -42,17 +57,34 @@ if (storedToken) {
   setAuthToken(storedToken);
 }
 
-// 🔍 Request interceptor - simple logging
+// 🔍 Request interceptor - ensure URLs are clean
 axiosInstance.interceptors.request.use(
   (config) => {
-    const finalUrl = config.baseURL 
-      ? `${config.baseURL}${config.url?.startsWith('/') ? config.url : '/' + (config.url || '')}`
-      : config.url;
+    // Force clean baseURL and url - remove any whitespace
+    if (config.baseURL) {
+      config.baseURL = String(config.baseURL).trim();
+    }
+    if (config.url) {
+      config.url = String(config.url).trim();
+    }
+    
+    // Ensure baseURL is set correctly
+    if (!config.baseURL || config.baseURL === '') {
+      config.baseURL = '/api';
+    }
+    
+    // Build final URL for logging
+    const base = config.baseURL || '';
+    const path = config.url || '';
+    const finalUrl = base && base !== '/api'
+      ? `${base}${path.startsWith('/') ? path : '/' + path}`
+      : `${base}${path.startsWith('/') ? path : '/' + path}`;
     
     console.log("🔵 API Request:", {
       method: config.method?.toUpperCase(),
       path: config.url,
-      baseURL: config.baseURL,
+      baseURL: `"${config.baseURL}"`,
+      baseURLLength: config.baseURL?.length || 0,
       finalUrl: finalUrl,
     });
     
@@ -77,7 +109,7 @@ axiosInstance.interceptors.response.use(
 
 // Helper to normalize paths - ensure they start with /
 const normalizePath = (path: string): string => {
-  const clean = (path || '').trim();
+  const clean = String(path || '').trim();
   return clean.startsWith('/') ? clean : '/' + clean;
 };
 
@@ -107,9 +139,6 @@ const api = {
   defaults: axiosInstance.defaults,
 };
 
-// Log initialization
-const apiBaseUrl = getApiBaseUrl();
-console.log("✅ API initialized with baseURL:", apiBaseUrl);
-console.log("📋 Using external config:", typeof window !== 'undefined' && !!(window as any).APP_CONFIG);
+console.log("✅ API initialized successfully");
 
 export default api;
