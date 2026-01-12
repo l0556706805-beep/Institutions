@@ -3,6 +3,7 @@ using System;
 using System;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 namespace EducationOrdersAPI.Data
 {
     public static class SeedData
@@ -18,6 +19,23 @@ namespace EducationOrdersAPI.Data
                     new Institution { Name = "בית ספר ממ״ד נר תמיד", Address = "רח׳ מבוא התקווה 8, בני ברק", Phone = "03-7774567", ContactName = "דבורה לוי" },
                     new Institution { Name = "גן ילדים צהרון עתיד", Address = "רח׳ הילדות 3, מודיעין", Phone = "08-6667890", ContactName = "שרה פרידמן" }
                 );
+                ctx.SaveChanges();
+            }
+
+            // Create default admin user if no users exist
+            if (!ctx.Users.Any())
+            {
+                var pwHasher = new PasswordHasher<User>();
+                var adminUser = new User
+                {
+                    Email = "l0556706805@gmail.com",
+                    FullName = "מנהל מערכת",
+                    Role = "Admin",
+                    InstitutionId = null,
+                    CreatedAt = DateTime.UtcNow
+                };
+                adminUser.PasswordHash = pwHasher.HashPassword(adminUser, "Admin123!"); // Default password - change after first login
+                ctx.Users.Add(adminUser);
                 ctx.SaveChanges();
             }
 
