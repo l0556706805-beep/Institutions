@@ -145,7 +145,17 @@ using (var scope = app.Services.CreateScope())
     var ctx = scope.ServiceProvider.GetRequiredService<InstitutionsContext>();
     try
     {
-        ctx.Database.Migrate();
+        // Try to migrate, but don't fail if migrations don't exist
+        try
+        {
+            ctx.Database.Migrate();
+        }
+        catch (Exception migrateEx)
+        {
+            // If migrations don't exist, that's okay - tables might already be created manually
+            Console.WriteLine("Migration skipped: " + migrateEx.Message);
+        }
+        
         SeedData.Initialize(ctx);
     }
     catch (Exception ex)

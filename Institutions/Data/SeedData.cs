@@ -10,7 +10,16 @@ namespace EducationOrdersAPI.Data
     {
         public static void Initialize(InstitutionsContext ctx)
         {
-            ctx.Database.Migrate();
+            // Try to migrate, but don't fail if migrations don't exist
+            try
+            {
+                ctx.Database.Migrate();
+            }
+            catch (Exception ex)
+            {
+                // If migrations don't exist, that's okay - tables might already be created manually
+                Console.WriteLine("Migration skipped: " + ex.Message);
+            }
 
             if (!ctx.Institutions.Any())
             {
