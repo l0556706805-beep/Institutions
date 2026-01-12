@@ -1,11 +1,15 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 
-// Create axios instance WITHOUT baseURL - we'll build full URLs ourselves
+/**
+ * IMPORTANT:
+ * We do NOT call the Render backend directly from the browser.
+ * In production we proxy via Cloudflare Pages Function at /api/* (same-origin).
+ * In local dev we proxy via CRA setupProxy.js (also /api/*).
+ */
+
 const axiosInstance = axios.create({
   timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
 // Set default headers
@@ -29,28 +33,11 @@ if (storedToken) {
   setAuthToken(storedToken);
 }
 
-// Helper to build full URL - NO baseURL dependency
-const buildFullUrl = (path: string): string => {
-  // Normalize path
-  const cleanPath = path.startsWith('/') ? path : '/' + path;
-  
-  // Check if we're in production
-  if (typeof window === 'undefined') {
-    return '/api' + cleanPath;
-  }
-  
-  const hostname = window.location.hostname;
-  const isProduction = hostname !== 'localhost' && 
-                       hostname !== '127.0.0.1' &&
-                       !hostname.includes('localhost');
-  
-  if (isProduction) {
-    // In production, build full URL directly
-    return 'https://institutions-93gl.onrender.com/api' + cleanPath;
-  }
-  
-  // In development, use relative path
-  return '/api' + cleanPath;
+// Build a SAME-ORIGIN API URL (handled by proxy in dev + Pages Function in prod)
+const buildApiUrl = (path: string): string => {
+  const cleanPath = String(path || "").trim();
+  const normalized = cleanPath.startsWith("/") ? cleanPath : "/" + cleanPath;
+  return "/api" + normalized;
 };
 
 // ⛔ טיפול אוטומטי בשגיאת 401 — טוקן לא תקף / פג
@@ -65,48 +52,42 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Helper to normalize paths - ensure they start with /
-const normalizePath = (path: string): string => {
-  const clean = String(path || '').trim();
-  return clean.startsWith('/') ? clean : '/' + clean;
-};
-
-// Wrapper API object - build full URLs directly, NO baseURL
+// Wrapper API object - always call SAME-ORIGIN /api/*
 const api = {
   get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const fullUrl = buildFullUrl(url);
-    console.log("🔵 API GET:", url, "->", fullUrl);
-    return axiosInstance.get<T>(fullUrl, config);
+    const apiUrl = buildApiUrl(url);
+    console.log("🔵 API GET:", url, "->", apiUrl);
+    return axiosInstance.get<T>(apiUrl, config);
   },
   
   post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const fullUrl = buildFullUrl(url);
-    console.log("🔵 API POST:", url, "->", fullUrl);
-    return axiosInstance.post<T>(fullUrl, data, config);
+    const apiUrl = buildApiUrl(url);
+    console.log("🔵 API POST:", url, "->", apiUrl);
+    return axiosInstance.post<T>(apiUrl, data, config);
   },
   
   put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const fullUrl = buildFullUrl(url);
-    console.log("🔵 API PUT:", url, "->", fullUrl);
-    return axiosInstance.put<T>(fullUrl, data, config);
+    const apiUrl = buildApiUrl(url);
+    console.log("🔵 API PUT:", url, "->", apiUrl);
+    return axiosInstance.put<T>(apiUrl, data, config);
   },
   
   delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const fullUrl = buildFullUrl(url);
-    console.log("🔵 API DELETE:", url, "->", fullUrl);
-    return axiosInstance.delete<T>(fullUrl, config);
+    const apiUrl = buildApiUrl(url);
+    console.log("🔵 API DELETE:", url, "->", apiUrl);
+    return axiosInstance.delete<T>(apiUrl, config);
   },
   
   patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const fullUrl = buildFullUrl(url);
-    console.log("🔵 API PATCH:", url, "->", fullUrl);
-    return axiosInstance.patch<T>(fullUrl, data, config);
+    const apiUrl = buildApiUrl(url);
+    console.log("🔵 API PATCH:", url, "->", apiUrl);
+    return axiosInstance.patch<T>(apiUrl, data, config);
   },
   
   // Expose defaults for backward compatibility
   defaults: axiosInstance.defaults,
 };
 
-console.log("✅ API initialized - building full URLs directly");
+console.log("✅ API initialized - using same-origin /api/* proxy");
 
 export default api;
