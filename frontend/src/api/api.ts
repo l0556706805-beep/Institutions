@@ -7,22 +7,30 @@ const BACKEND_API_URL = 'https://institutions-93gl.onrender.com/api';
 const getApiBaseUrl = (): string => {
   // Check if we're in browser environment
   if (typeof window === 'undefined') {
+    console.log("🔵 getApiBaseUrl: window is undefined, returning /api");
     return '/api';
   }
   
   // Check if we're in production by checking the hostname
   const hostname = window.location.hostname;
+  console.log("🔵 getApiBaseUrl: hostname =", hostname);
+  
   const isProduction = hostname !== 'localhost' && 
                        hostname !== '127.0.0.1' &&
                        !hostname.includes('localhost');
   
+  console.log("🔵 getApiBaseUrl: isProduction =", isProduction);
+  console.log("🔵 getApiBaseUrl: BACKEND_API_URL =", BACKEND_API_URL);
+  
   if (isProduction) {
     // In production, ALWAYS use hardcoded backend URL
     // Don't rely on config.js - it might not be loaded or might be empty
+    console.log("🔵 getApiBaseUrl: Returning BACKEND_API_URL:", BACKEND_API_URL);
     return BACKEND_API_URL;
   }
   
   // In development, use relative path - proxy will handle it
+  console.log("🔵 getApiBaseUrl: Returning /api for development");
   return '/api';
 };
 
@@ -68,8 +76,12 @@ axiosInstance.interceptors.request.use(
     // Get base URL - always reliable
     const correctBaseUrl = getApiBaseUrl();
     
-    // ALWAYS set baseURL - force it
+    // CRITICAL: Delete any existing baseURL first, then set it fresh
+    delete config.baseURL;
     config.baseURL = correctBaseUrl;
+    
+    // Also update the instance defaults to prevent override
+    axiosInstance.defaults.baseURL = correctBaseUrl;
     
     // Clean URLs
     if (config.baseURL) {
@@ -86,11 +98,20 @@ axiosInstance.interceptors.request.use(
       ? `${base}${path.startsWith('/') ? path : '/' + path}`
       : `${base}${path.startsWith('/') ? path : '/' + path}`;
     
-    // Verify baseURL is correct (not frontend domain)
+    // Verify baseURL is correct (not frontend domain) - FORCE fix if wrong
     const currentHostname = typeof window !== 'undefined' ? window.location.origin : '';
     if (config.baseURL && currentHostname && config.baseURL.includes(currentHostname)) {
       console.error("❌ CRITICAL: baseURL is frontend domain! Forcing correct URL...");
+      delete config.baseURL;
       config.baseURL = correctBaseUrl;
+      axiosInstance.defaults.baseURL = correctBaseUrl;
+    }
+    
+    // Final verification - if still wrong, force it one more time
+    if (!config.baseURL || config.baseURL === '' || (currentHostname && config.baseURL.includes(currentHostname))) {
+      console.error("❌ CRITICAL: baseURL still wrong after fix! Forcing again...");
+      config.baseURL = correctBaseUrl;
+      axiosInstance.defaults.baseURL = correctBaseUrl;
     }
     
     console.log("🔵 API Request:", {
@@ -98,6 +119,7 @@ axiosInstance.interceptors.request.use(
       path: config.url,
       baseURL: config.baseURL,
       baseURLFromFunction: correctBaseUrl,
+      instanceDefaultsBaseURL: axiosInstance.defaults.baseURL,
       finalUrl: finalUrl,
       hostname: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
     });
