@@ -1,12 +1,8 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 
 /**
- * IMPORTANT:
- * We do NOT call the Render backend directly from the browser.
- * In production we proxy via Cloudflare Pages Function at /api/* (same-origin).
- * In local dev we proxy via CRA setupProxy.js (also /api/*).
+ * Axios instance
  */
-
 const axiosInstance = axios.create({
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
@@ -33,11 +29,12 @@ if (storedToken) {
   setAuthToken(storedToken);
 }
 
-// Build a SAME-ORIGIN API URL (handled by proxy in dev + Pages Function in prod)
+// Build API URL pointing directly to Render backend
 const buildApiUrl = (path: string): string => {
   const cleanPath = String(path || "").trim();
   const normalized = cleanPath.startsWith("/") ? cleanPath : "/" + cleanPath;
-  return "/api" + normalized;
+  // השינוי כאן - URL מלא ל‑Render
+  return `https://institutions-93gl.onrender.com/api${normalized}`;
 };
 
 // ⛔ טיפול אוטומטי בשגיאת 401 — טוקן לא תקף / פג
@@ -45,14 +42,13 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // מוחק טוקן לא תקין
       setAuthToken(null);
     }
     return Promise.reject(error);
   }
 );
 
-// Wrapper API object - always call SAME-ORIGIN /api/*
+// Wrapper API object
 const api = {
   get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
     const apiUrl = buildApiUrl(url);
@@ -84,10 +80,9 @@ const api = {
     return axiosInstance.patch<T>(apiUrl, data, config);
   },
   
-  // Expose defaults for backward compatibility
   defaults: axiosInstance.defaults,
 };
 
-console.log("✅ API initialized - using same-origin /api/* proxy");
+console.log("✅ API initialized - using Render backend");
 
 export default api;
