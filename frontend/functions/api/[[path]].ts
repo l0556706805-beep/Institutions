@@ -36,13 +36,16 @@ export async function onRequest(context: any) {
   headers.delete("origin");
   headers.delete("referer");
 
+  // Clone request body for POST/PUT/PATCH requests
+  let body: ReadableStream | null = null;
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    body = request.body;
+  }
+
   const upstreamRequest = new Request(upstreamUrl.toString(), {
     method: request.method,
     headers,
-    body:
-      request.method === "GET" || request.method === "HEAD"
-        ? undefined
-        : request.body,
+    body: body,
     redirect: "manual",
   });
 
