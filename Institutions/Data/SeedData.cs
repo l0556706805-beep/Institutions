@@ -22,13 +22,14 @@ namespace EducationOrdersAPI.Data
                 ctx.SaveChanges();
             }
 
-            // Create default admin user if no users exist
-            if (!ctx.Users.Any())
+            // Create default admin user if it doesn't exist
+            var adminEmail = "l0556706805@gmail.com";
+            if (!ctx.Users.Any(u => u.Email == adminEmail))
             {
                 var pwHasher = new PasswordHasher<User>();
                 var adminUser = new User
                 {
-                    Email = "l0556706805@gmail.com",
+                    Email = adminEmail,
                     FullName = "מנהל מערכת",
                     Role = "Admin",
                     InstitutionId = null,
