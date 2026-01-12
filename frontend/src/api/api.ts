@@ -1,36 +1,26 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 
-// Hardcoded backend URL - always use this in production
-const BACKEND_API_URL = 'https://institutions-93gl.onrender.com/api';
-
 // Function to get API base URL - simple and reliable
+// Use string literal directly to prevent minification issues
 const getApiBaseUrl = (): string => {
   // Check if we're in browser environment
   if (typeof window === 'undefined') {
-    console.log("🔵 getApiBaseUrl: window is undefined, returning /api");
     return '/api';
   }
   
   // Check if we're in production by checking the hostname
   const hostname = window.location.hostname;
-  console.log("🔵 getApiBaseUrl: hostname =", hostname);
-  
   const isProduction = hostname !== 'localhost' && 
                        hostname !== '127.0.0.1' &&
                        !hostname.includes('localhost');
   
-  console.log("🔵 getApiBaseUrl: isProduction =", isProduction);
-  console.log("🔵 getApiBaseUrl: BACKEND_API_URL =", BACKEND_API_URL);
-  
   if (isProduction) {
     // In production, ALWAYS use hardcoded backend URL
-    // Don't rely on config.js - it might not be loaded or might be empty
-    console.log("🔵 getApiBaseUrl: Returning BACKEND_API_URL:", BACKEND_API_URL);
-    return BACKEND_API_URL;
+    // Use string literal directly - NO variable to prevent minification issues
+    return 'https://institutions-93gl.onrender.com/api';
   }
   
   // In development, use relative path - proxy will handle it
-  console.log("🔵 getApiBaseUrl: Returning /api for development");
   return '/api';
 };
 
