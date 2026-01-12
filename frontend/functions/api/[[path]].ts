@@ -35,6 +35,11 @@ export async function onRequest(context: any) {
   headers.delete("host");
   headers.delete("origin");
   headers.delete("referer");
+  
+  // Ensure Content-Type is preserved for POST/PUT/PATCH requests
+  if (request.method !== "GET" && request.method !== "HEAD" && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
 
   // Clone request body for POST/PUT/PATCH requests
   let body: ReadableStream | null = null;
