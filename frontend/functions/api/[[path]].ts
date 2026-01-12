@@ -23,11 +23,12 @@ export async function onRequest(context: any) {
 
   const incomingUrl = new URL(request.url);
 
-  // Forward to Render, keeping the same pathname (/api/...)
-  const upstreamUrl = new URL(incomingUrl.toString());
-  upstreamUrl.protocol = "https:";
-  upstreamUrl.hostname = "institutions-93gl.onrender.com";
-  upstreamUrl.port = "";
+  // Extract path after /api (e.g., /api/auth/login -> /auth/login)
+  const pathAfterApi = incomingUrl.pathname.replace(/^\/api/, "") || "/";
+  
+  // Build upstream URL to Render backend
+  const upstreamUrl = new URL(`https://institutions-93gl.onrender.com/api${pathAfterApi}`);
+  upstreamUrl.search = incomingUrl.search; // Preserve query params
 
   // Copy headers but drop ones that can confuse upstream
   const headers = new Headers(request.headers);
