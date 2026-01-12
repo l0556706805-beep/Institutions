@@ -9,9 +9,9 @@ const getApiBaseUrl = (): string => {
   
   // Try to get config from window.APP_CONFIG (loaded from config.js)
   const appConfig = (window as any).APP_CONFIG;
-  if (appConfig?.API_URL) {
+  if (appConfig && appConfig.API_URL) {
     const configUrl = String(appConfig.API_URL).trim();
-    if (configUrl && configUrl.startsWith('http')) {
+    if (configUrl && configUrl.length > 0 && configUrl.startsWith('http')) {
       console.log("✅ Using external config:", configUrl);
       return configUrl;
     }
@@ -19,22 +19,31 @@ const getApiBaseUrl = (): string => {
   
   // Check if we're in production by checking the hostname
   // If not localhost and not 127.0.0.1, assume production
-  const isProduction = window.location.hostname !== 'localhost' && 
-                       window.location.hostname !== '127.0.0.1' &&
-                       !window.location.hostname.includes('localhost');
+  const hostname = window.location.hostname;
+  const isProduction = hostname !== 'localhost' && 
+                       hostname !== '127.0.0.1' &&
+                       !hostname.includes('localhost');
   
   if (isProduction) {
     // In production without config, use hardcoded backend URL
     console.warn("⚠️ No external config found, using hardcoded backend URL");
-    return 'https://institutions-93gl.onrender.com/api';
+    const hardcodedUrl = 'https://institutions-93gl.onrender.com/api';
+    console.log("🔵 Hardcoded URL:", hardcodedUrl);
+    return hardcodedUrl;
   }
   
   // In development, use relative path - proxy will handle it
   return '/api';
 };
 
-// Get initial base URL
-const initialBaseUrl = typeof window !== 'undefined' ? getApiBaseUrl().trim() : '/api';
+// Get initial base URL - ensure it's never empty
+let initialBaseUrl = '/api';
+if (typeof window !== 'undefined') {
+  const url = getApiBaseUrl().trim();
+  initialBaseUrl = url || 'https://institutions-93gl.onrender.com/api';
+}
+
+console.log("🔵 Creating axios instance with baseURL:", initialBaseUrl);
 
 // Create axios instance - set baseURL immediately
 const axiosInstance = axios.create({
@@ -70,7 +79,17 @@ if (storedToken) {
 axiosInstance.interceptors.request.use(
   (config) => {
     // Get base URL dynamically (checks config.js on every request)
-    const correctBaseUrl = getApiBaseUrl().trim();
+    let correctBaseUrl = getApiBaseUrl().trim();
+    
+    // Ensure we never have an empty baseURL
+    if (!correctBaseUrl || correctBaseUrl === '') {
+      console.error("❌ CRITICAL: getApiBaseUrl returned empty! Using fallback...");
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+      const isProduction = hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.includes('localhost');
+      correctBaseUrl = isProduction 
+        ? 'https://institutions-93gl.onrender.com/api'
+        : '/api';
+    }
     
     // ALWAYS set baseURL - force it, don't trust defaults
     config.baseURL = correctBaseUrl;
@@ -92,7 +111,7 @@ axiosInstance.interceptors.request.use(
     
     // Verify baseURL is correct (not frontend domain)
     const currentHostname = typeof window !== 'undefined' ? window.location.origin : '';
-    if (config.baseURL && config.baseURL.includes(currentHostname) && currentHostname !== '') {
+    if (config.baseURL && currentHostname && config.baseURL.includes(currentHostname)) {
       console.error("❌ CRITICAL: baseURL is frontend domain! Forcing correct URL...");
       config.baseURL = correctBaseUrl;
     }
@@ -104,6 +123,8 @@ axiosInstance.interceptors.request.use(
       baseURLFromFunction: correctBaseUrl,
       finalUrl: finalUrl,
       hostname: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
+      appConfigExists: typeof window !== 'undefined' && !!(window as any).APP_CONFIG,
+      appConfigApiUrl: typeof window !== 'undefined' && (window as any).APP_CONFIG?.API_URL,
     });
     
     return config;
