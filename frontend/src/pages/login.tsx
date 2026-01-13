@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import api from "../api/api";
+import api, { setAuthToken } from "../api/api";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -12,21 +12,33 @@ export const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-     const res = await api.post("/auth/login", {
-  email: email.trim().toLowerCase(),
-  password,
-});
-console.log(res.data);
+    setError("");
 
-      login(res.data.token);
+    try {
+      const res = await api.post("/auth/login", {
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      const jwt = res.data.token;
+
+      if (!jwt) throw new Error("Token not received");
+
+      // 🔹 שמירה גם ב־axios וגם ב־context
+      setAuthToken(jwt);
+      login(jwt);
+
+      console.log("✅ Logged in successfully", jwt);
+
       navigate("/products");
-    } catch {
+    } catch (err: any) {
+      console.error("❌ Login error:", err.response?.data || err.message);
       setError("שגיאת התחברות. בדקי את הפרטים.");
     }
   };
 
   const handleLogout = () => {
+    setAuthToken(null);
     logout();
     navigate("/login");
   };
@@ -63,8 +75,14 @@ console.log(res.data);
         <button type="submit">כניסה</button>
       </form>
 
-      <button 
-        style={{ marginTop: "10px", background: "none", border: "none", color: "blue", cursor: "pointer" }}
+      <button
+        style={{
+          marginTop: "10px",
+          background: "none",
+          border: "none",
+          color: "blue",
+          cursor: "pointer",
+        }}
         onClick={goToForgotPassword}
       >
         שכחתי סיסמה
