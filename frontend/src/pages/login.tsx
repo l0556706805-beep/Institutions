@@ -13,7 +13,12 @@ export const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await api.post("/auth/login", { email, password });
+     const res = await api.post("/auth/login", {
+  email: email.trim().toLowerCase(),
+  password,
+});
+console.log(res.data);
+
       login(res.data.token);
       navigate("/products");
     } catch {

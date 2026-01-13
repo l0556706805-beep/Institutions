@@ -2,18 +2,20 @@ import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 
 /**
  * Axios instance
+ * Backend: Render
  */
 const axiosInstance = axios.create({
+  baseURL: "https://institutions-93gl.onrender.com/api",
   timeout: 10000,
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Set default headers
-let authToken: string | null = null;
-
-// פונקציה שמגדירה את הטוקן בגלובל
+// =====================
+// Auth Token handling
+// =====================
 export const setAuthToken = (token: string | null) => {
-  authToken = token;
   if (token) {
     axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     localStorage.setItem("token", token);
@@ -23,21 +25,15 @@ export const setAuthToken = (token: string | null) => {
   }
 };
 
-// 🔥 בעת טעינת האפליקציה — אם יש טוקן ב־localStorage נטען אותו
+// 🔥 טעינת טוקן בעת עליית האפליקציה
 const storedToken = localStorage.getItem("token");
 if (storedToken) {
   setAuthToken(storedToken);
 }
 
-// Build API URL pointing directly to Render backend
-const buildApiUrl = (path: string): string => {
-  const cleanPath = String(path || "").trim();
-  const normalized = cleanPath.startsWith("/") ? cleanPath : "/" + cleanPath;
-  // השינוי כאן - URL מלא ל‑Render
-  return `https://institutions-93gl.onrender.com/api${normalized}`;
-};
-
-// ⛔ טיפול אוטומטי בשגיאת 401 — טוקן לא תקף / פג
+// =====================
+// 401 interceptor
+// =====================
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -48,41 +44,28 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Wrapper API object
+// =====================
+// API wrapper
+// =====================
 const api = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const apiUrl = buildApiUrl(url);
-    console.log("🔵 API GET:", url, "->", apiUrl);
-    return axiosInstance.get<T>(apiUrl, config);
-  },
-  
-  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const apiUrl = buildApiUrl(url);
-    console.log("🔵 API POST:", url, "->", apiUrl);
-    return axiosInstance.post<T>(apiUrl, data, config);
-  },
-  
-  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const apiUrl = buildApiUrl(url);
-    console.log("🔵 API PUT:", url, "->", apiUrl);
-    return axiosInstance.put<T>(apiUrl, data, config);
-  },
-  
-  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const apiUrl = buildApiUrl(url);
-    console.log("🔵 API DELETE:", url, "->", apiUrl);
-    return axiosInstance.delete<T>(apiUrl, config);
-  },
-  
-  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    const apiUrl = buildApiUrl(url);
-    console.log("🔵 API PATCH:", url, "->", apiUrl);
-    return axiosInstance.patch<T>(apiUrl, data, config);
-  },
-  
+  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.get<T>(url, config),
+
+  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.post<T>(url, data, config),
+
+  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.put<T>(url, data, config),
+
+  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.delete<T>(url, config),
+
+  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.patch<T>(url, data, config),
+
   defaults: axiosInstance.defaults,
 };
 
-console.log("✅ API initialized - using Render backend");
+console.log("✅ API initialized - Render backend");
 
 export default api;
