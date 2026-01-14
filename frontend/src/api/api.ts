@@ -5,7 +5,7 @@ import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 // =====================
 const axiosInstance = axios.create({
   baseURL: "https://institutions-93gl.onrender.com/api",
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },

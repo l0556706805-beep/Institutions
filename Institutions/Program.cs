@@ -139,6 +139,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowReactApp");
+app.MapGet("/health", () => Results.Ok("OK"));
 
 app.UseAuthentication();
 app.UseAuthorization();
