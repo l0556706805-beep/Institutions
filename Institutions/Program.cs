@@ -104,7 +104,7 @@ builder.Services.AddCors(options =>
                     && uri.Port == 3000)
                     return true;
 
-                // Cloudflare
+                // Cloudflare / Pages.dev (כל subdomain)
                 if (uri.Host.EndsWith(".workers.dev", StringComparison.OrdinalIgnoreCase))
                     return true;
 
@@ -135,10 +135,20 @@ if (app.Environment.IsDevelopment())
     var ctx = scope.ServiceProvider.GetRequiredService<InstitutionsContext>();
 
     ctx.Database.Migrate();
-    SeedData.Initialize(ctx);
+    SeedData.Initialize(ctx); // כאן אפשר להשאיר Seed רגיל ב-DEV
+}
+
+// =====================
+// Seed Admin חכם (כל הסביבות, רק Admin ראשון)
+// =====================
+using (var scope = app.Services.CreateScope())
+{
+    var ctx = scope.ServiceProvider.GetRequiredService<InstitutionsContext>();
+    SeedData.SeedAdmin(ctx); // ייצור Admin רק אם אין Admin
 }
 
 app.UseCors("AllowReactApp");
+
 app.MapGet("/health", () => Results.Ok("OK"));
 
 app.UseAuthentication();
