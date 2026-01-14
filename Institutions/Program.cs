@@ -144,7 +144,7 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var ctx = scope.ServiceProvider.GetRequiredService<InstitutionsContext>();
-    SeedData.SeedAdmin(ctx); // ייצור Admin רק אם אין Admin
+    //SeedData.SeedAdmin(ctx); // ייצור Admin רק אם אין Admin
 }
 
 app.UseCors("AllowReactApp");
