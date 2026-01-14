@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text;
+﻿using System.Text;
 using EducationOrdersAPI.Data;
 using EducationOrdersAPI.Helpers;
 using EducationOrdersAPI.Repository;
@@ -14,8 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Database (PostgreSQL - Supabase)
 // =====================
 builder.Services.AddDbContext<InstitutionsContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // =====================
 // Email Settings
@@ -56,19 +54,16 @@ var key = Encoding.UTF8.GetBytes(jwt.Key);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false; // פיתוח מקומי
+        options.RequireHttpsMetadata = false;
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidIssuer = jwt.Issuer,
-
             ValidateAudience = true,
             ValidAudience = jwt.Audience,
-
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
-
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
@@ -93,26 +88,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy
-            .SetIsOriginAllowed(origin =>
-            {
-                if (string.IsNullOrWhiteSpace(origin)) return false;
-                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
-
-                // Local dev
-                if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
-                    && uri.Port == 3000)
-                    return true;
-
-                // Cloudflare / Pages.dev (כל subdomain)
-                if (uri.Host.EndsWith(".workers.dev", StringComparison.OrdinalIgnoreCase))
-                    return true;
-
-                if (uri.Host.EndsWith(".pages.dev", StringComparison.OrdinalIgnoreCase))
-                    return true;
-
-                return false;
-            })
+        // מאפשר רק את ה־frontendים המפורטים
+        policy.WithOrigins(
+                "http://localhost:3000",               // פיתוח מקומי
+                "https://institutions-czw.pages.dev"  // Production
+            )
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -135,25 +115,18 @@ if (app.Environment.IsDevelopment())
     var ctx = scope.ServiceProvider.GetRequiredService<InstitutionsContext>();
 
     ctx.Database.Migrate();
-    SeedData.Initialize(ctx); // כאן אפשר להשאיר Seed רגיל ב-DEV
+    SeedData.Initialize(ctx); // Seed רק בפיתוח
 }
 
 // =====================
-// Seed Admin חכם (כל הסביבות, רק Admin ראשון)
+// CORS must come BEFORE auth
 // =====================
-using (var scope = app.Services.CreateScope())
-{
-    var ctx = scope.ServiceProvider.GetRequiredService<InstitutionsContext>();
-    //SeedData.SeedAdmin(ctx); // ייצור Admin רק אם אין Admin
-}
-
 app.UseCors("AllowReactApp");
-
-app.MapGet("/health", () => Results.Ok("OK"));
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapGet("/health", () => Results.Ok("OK"));
 
 app.Run();
