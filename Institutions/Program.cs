@@ -49,7 +49,7 @@ builder.Services.AddSwaggerGen();
 // =====================
 // JWT Authentication
 // =====================
-var key = Encoding.UTF8.GetBytes(jwt.Key);
+var key = Encoding.UTF8.GetBytes(jwt.Key ?? throw new Exception("JWT key missing"));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -82,19 +82,30 @@ builder.Services.AddAuthorization(options =>
 });
 
 // =====================
-// CORS
+// CORS - מאפשר רק frontends חוקיים
 // =====================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        // מאפשר רק את ה־frontendים המפורטים
-        policy.WithOrigins(
-                "http://localhost:3000",               // פיתוח מקומי
-                "https://institutions-czw.pages.dev"  // Production
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        policy.SetIsOriginAllowed(origin =>
+        {
+            if (string.IsNullOrWhiteSpace(origin)) return false;
+            if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+
+            // Local dev
+            if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) && uri.Port == 3000)
+                return true;
+
+            // Pages / Workers dev / Render
+            if (uri.Host.EndsWith(".pages.dev", StringComparison.OrdinalIgnoreCase) ||
+                uri.Host.EndsWith(".workers.dev", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return false;
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
 
@@ -113,9 +124,10 @@ if (app.Environment.IsDevelopment())
     // =====================
     using var scope = app.Services.CreateScope();
     var ctx = scope.ServiceProvider.GetRequiredService<InstitutionsContext>();
-
     ctx.Database.Migrate();
-    SeedData.Initialize(ctx); // Seed רק בפיתוח
+
+    // SeedData.Initialize מטפל גם ב־admin אם צריך
+    SeedData.Initialize(ctx);
 }
 
 // =====================
