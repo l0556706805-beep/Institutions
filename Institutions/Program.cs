@@ -7,10 +7,12 @@ using EducationOrdersAPI.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// =====================
+// Database (PostgreSQL - Supabase)
+// =====================
 builder.Services.AddDbContext<InstitutionsContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -18,21 +20,18 @@ builder.Services.AddDbContext<InstitutionsContext>(options =>
 // =====================
 // Email Settings
 // =====================
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailService, EmailService>();
 
 // =====================
 // JWT Settings
 // =====================
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
-var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("Jwt"));
 
-//// =====================
-//// Database (LOCAL SQL)
-//// =====================
-//builder.Services.AddDbContext<InstitutionsContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-//);
+var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
+          ?? throw new Exception("JWT settings missing");
 
 // =====================
 // Services & Repositories
@@ -54,43 +53,42 @@ builder.Services.AddSwaggerGen();
 // =====================
 var key = Encoding.UTF8.GetBytes(jwt.Key);
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false; // מאפשר פיתוח מקומי ב־HTTP
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = true,
-        ValidIssuer = jwt.Issuer,
+        options.RequireHttpsMetadata = false; // פיתוח מקומי
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwt.Issuer,
 
-        ValidateAudience = true,
-        ValidAudience = jwt.Audience,
+            ValidateAudience = true,
+            ValidAudience = jwt.Audience,
 
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
 
-        ValidateLifetime = true
-    };
-});
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
 // =====================
 // Authorization
 // =====================
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("Admin", policy => policy.RequireClaim("role", "Admin"));
-    options.AddPolicy("Institution", policy => policy.RequireClaim("role", "Institution"));
+    options.AddPolicy("Admin",
+        policy => policy.RequireClaim("role", "Admin"));
+
+    options.AddPolicy("Institution",
+        policy => policy.RequireClaim("role", "Institution"));
 });
 
 // =====================
 // CORS
 // =====================
-// מאפשר גם פיתוח מקומי וגם frontend בפריסה
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
@@ -101,11 +99,12 @@ builder.Services.AddCors(options =>
                 if (string.IsNullOrWhiteSpace(origin)) return false;
                 if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
 
-                // local dev
-                if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) && uri.Port == 3000)
+                // Local dev
+                if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+                    && uri.Port == 3000)
                     return true;
 
-                // Cloudflare deployments
+                // Cloudflare
                 if (uri.Host.EndsWith(".workers.dev", StringComparison.OrdinalIgnoreCase))
                     return true;
 
@@ -128,39 +127,22 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // =====================
+    // DB Migration & Seed (DEV ONLY)
+    // =====================
+    using var scope = app.Services.CreateScope();
+    var ctx = scope.ServiceProvider.GetRequiredService<InstitutionsContext>();
+
+    ctx.Database.Migrate();
+    SeedData.Initialize(ctx);
 }
 
 app.UseCors("AllowReactApp");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// =====================
-// DB Migration & Seed
-// =====================
-using (var scope = app.Services.CreateScope())
-{
-    var ctx = scope.ServiceProvider.GetRequiredService<InstitutionsContext>();
-    try
-    {
-        // Try to migrate, but don't fail if migrations don't exist
-        try
-        {
-            ctx.Database.Migrate();
-        }
-        catch (Exception migrateEx)
-        {
-            // If migrations don't exist, that's okay - tables might already be created manually
-            Console.WriteLine("Migration skipped: " + migrateEx.Message);
-        }
-        
-        SeedData.Initialize(ctx);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("DB init error: " + ex.Message);
-    }
-}
 
 app.Run();
